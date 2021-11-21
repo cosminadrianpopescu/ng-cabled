@@ -1,15 +1,17 @@
 # Ng Cabled
 
-Or, extending Angular components the proper way.
+**Or, extending Angular components the proper way.**
 
-*Install:*
+This library contains a few decorators which will make extending components
+practical and easy. 
+
+***Install***
 
 ```
 npm install --save ng-cabled
 ```
 
-This library contains a few decorators which will make extending components
-practical and easy. 
+***Why is there a need***
 
 Unfortunatelly, Angular is not really oriented via extending components or
 services. I heard a lot of times the question "why do you need to extend a
@@ -31,9 +33,14 @@ from a base component is very usefull:
   services. 
 
 These are just a few examples where inheritance is the most straight forward
-solution. Between the arguments that I've heard during my time since I'm doing
+solution.
+
+
+***Counter-arguments / other options / ...***
+
+Between the arguments that I've heard since I'm doing
 Angular development, the only valid one was "use object composition". The
-others, like finding different more complicated solution just because the code
+others like finding different more complicated solutions just because the code
 would otherwise be more complicated are not even worth discussing. I'm not
 going to discuss the reasoning that because some misterious reason, OOP is
 evil. 
