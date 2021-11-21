@@ -5,7 +5,7 @@
 This library contains a few decorators which will make extending components
 practical and easy. 
 
-***Install***
+## Install
 
 ```
 npm install --save ng-cabled
@@ -92,11 +92,11 @@ major issues:
   having its behaviour broken.
 
 
-***ng-cabled solution***
+## ng-cabled solution
 
 In order to solve this issues, this library provides a few decorators:
 
-## `DecoratedClass` and `Cabled` annotations
+### `DecoratedClass` and `Cabled` annotations
 
 These two annotations will help with dependency injection. They will be
 responsible for injecting dependencies in a class. Use the `DecoratedClass`
@@ -107,39 +107,42 @@ that should be automatically injected.
 
 Example:
 
-### Normal Angular way:
+***Normal Angular way***
 
 ```
 export class ParentComponent {
-    constructor(private _myPrivateService: MyService) {}
+    constructor(private _parentPrivateService: ParentComponentService) {}
 }
 
 @Component({
     ...
 })
 export class ChildComponent {
-    constructor(_baseClassPrivateService: MyService, private _myPrivateService: MyOtherService) {
+    constructor(_baseClassPrivateService: ParentComponentService, private _childPrivateService: ChildComponentService) {
         super(_baseClassPrivateService);
     }
 }
 ```
 
-### Ng-cabled way:
+***ng-cabled way***
 
 ```
 @DecoratedClass
 export class ParentComponent {
-    @Cabled(MyService) private _myPrivateService: MyService;
+    @Cabled(ParentComponentService) private _myPrivateService: ParentComponentService;
 }
 
+@Component({
+    ...
+})
 @DecoratedClass
 export class ChildComponent extends ParentComponent {
-    @Cabled(MyOtherService) private _myOtherService: MyOtherService;
+    @Cabled(ChildComponentService) private _childPrivateService: ChildComponentService;
 }
 ```
 
 Notice how the `ChildComponent` now does not know and does not care about the
-internal private dependencies of `ParentComponent`.
+internal private dependencies of `ParentComponent` (i.e. the private `ParentComponentService`).
 
 The first argument of the `Cabled` annotation can be any Angular accepted
 dependency injection token (it can be a class, it can be an `InjectionToken`,
