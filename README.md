@@ -11,7 +11,7 @@ npm install --save ng-cabled
 This library contains a few decorators which will make extending components
 practical and easy. 
 
-Unfortunatelly, Angular is not reall oriented via extending components or
+Unfortunatelly, Angular is not really oriented via extending components or
 services. I heard a lot of times the question "why do you need to extend a
 component?" during some interviews or during working on a project. Well, every
 time the answer is quite simple: there are lots of cases where inherinting
@@ -32,7 +32,7 @@ from a base component is very usefull:
 
 These are just a few examples where inheritance is the most straight forward
 solution. Between the arguments that I've heard during my time since I'm doing
-Angular development, then only valid one was "use object composition". The
+Angular development, the only valid one was "use object composition". The
 others, like finding different more complicated solution just because the code
 would otherwise be more complicated are not even worth discussing. I'm not
 going to discuss the reasoning that because some misterious reason, OOP is
@@ -40,7 +40,8 @@ evil.
 
 Regarding object composition, I've tried this and it poses one major issue:
 when it comes to modern developing tools, we are left on our own. There is no
-IDE or no LSP for angular which will properly interpret something like this:
+IDE nor LSP server for angular which will properly interpret something like
+this:
 
 ```
 const A = {
@@ -86,8 +87,8 @@ These two annotations will help with dependency injection. They will be
 responsible for injecting dependencies in a class. Use the `DecoratedClass`
 annotation on top of all the classes that should contain any of the decorators
 provided by the library. This will tell the compiler to check the class for
-dependencies. And then, you the `Cabled` annotation on all the properties that
-should be automatically injected. 
+dependencies. And then, you add the `Cabled` annotation on all the properties
+that should be automatically injected. 
 
 Example:
 
@@ -185,9 +186,10 @@ export class ChildComponent extends ParentComponent implements OnInit {
 ```
 
 Notice how now the behaviour of the component is changed. The user of the
-`ParentComponents` needs to know to call in `ngOnInit` `super.ngOnInit()`. Of
-course, when we have to deal with big development teams, such a mistake could
-slip in the code resulting in unexpecting behaviour. 
+`ParentComponents` needs to know to call in `ChildComponent`'s `ngOnInit` the
+`super.ngOnInit()`. Of course, when we have to deal with big development
+teams, such a mistake could slip in the code resulting in unexpecting
+behaviour. 
 
 The solution to this problem is given by the `NgCycle` annotation. When using
 this library, every component should extend `BaseComponent` class inside the
@@ -230,6 +232,115 @@ export class ChildComponent extends ParentComponent {
 
 Problem solved. No danger of overwritting the parent class method and breaking
 the expected behaviour. 
+
+Another bonus the `BaseComponent` is bringing is handling of the observables
+subscription. By extending `BaseComponent` and then instead of subscribing to
+observables, use `BaseComponent::connect` function, you can forget about
+observables and unsubscribing from them. 
+
+Example: 
+
+### Angular way of handling subscriptions:
+
+```
+@Component({
+    ...
+})
+export class MyCoolComponent implements OnDestroy, OnInit {
+    private _subs: Array<Subscription> = [];
+
+    constructor(private _myService: MyService, private _mySecondService: MySecondService){}
+
+    ngOnInit() {
+        this._subs.push(
+            this._myService.observable$.subscribe(() => this._doStuff()),
+        );
+
+        this._subs.push(
+            this._mySecondService.otherObservable$.subscribe(() => this._doOtherStuff()),
+        )
+    }
+
+    ngOnDestroy() {
+        this._subs.forEach(s => s.unsubscribe());
+    }
+}
+```
+
+Notice how ugly this is and also notice all the boilerplate code that we need
+to write in each component (this code has to appear in each component
+subscribing to an observable). Ugh... Ugly, ugly, ugly. 
+
+Now, compare this to this beauty:
+
+### Ng-cabled way:
+
+```
+@Component({
+    ...
+})
+@DecoratedClass
+export class MyCoolComponent extends BaseComponent {
+    @Cabled(MyService) private _myService: MyService;
+    @Cabled(MySecondService) private _mySecondService: MySecondService;
+
+    @NgCycle('init')
+    private _init() {
+        this.connect(
+            this._myService.observable$, 
+            () => this._doStuff(),
+        );
+        this.connect(
+            this._mySecondService.otherObservable$, 
+            () => this._doStuff(),
+        )
+    }
+}
+```
+
+Ta daaaaa!!!! This is it. Nice, right? No boiler plate code, no worries about
+unsubscribing. Also, you can have a third parameter to the
+`BaseComponent::connect` function, in case you want to group the subscriptions
+to manually unsubscribe from them at a certain point, like this:
+
+```
+const SUBSCRIPTION_TYPE = 'my-separate-subscription';
+
+@Component({
+    ...
+})
+@DecoratedClass
+export class MyCoolComponent extends BaseComponent {
+    @Cabled(MyService) private _myService: MyService;
+
+    @NgCycle('init')
+    private _init() {
+        this.connect(
+            this._myService.observable$, 
+            () => {
+                // If we have any subscriptions already running, 
+                const subs = this.getSubscriptionsByType(SUBSCRIPTION_TYPE);
+                // Unsubscribe from them
+                subs.forEach(s => s.unsubscribe());
+                // Then subscribe again to the other observable
+                this.connect(
+                    this._myService.otherObservable$, 
+                    () => this._doStuff(),
+                    // And group the subscription.
+                    SUBSCRIPTION_TYPE,
+                );
+            }
+        )
+    }
+}
+```
+
+Yes, I know, I know, I could've used a `switchMap` for this example. But this
+is just an example to give you an idea. Maybe there are scenarios where you
+can't use a `switchMap`, I don't know. And fine. If you really think that
+there is no other use case, just don't use this feature. You can still use the
+other beauties of this library right? And I'm sure for those you don't have
+such a strong counter argument. You see?
 
 In order to use all these beauties, you only need in each of your module to
 pass the `Injector` to a parent module. So, in order for these annotations to

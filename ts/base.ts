@@ -2,6 +2,13 @@ import {Directive, Injector, Input, SimpleChanges} from "@angular/core";
 import {Observable, Subscription} from "rxjs";
 import {CycleType, DecoratedClass, getCycles, processAllInjectors, processPostConstruct} from ".";
 
+const DEFAULT_SUBSCRIPTION_TYPE = '__defaultsubscriptiontype__';
+
+type InternalSubscription = {
+    s: Subscription;
+    type: string;
+}
+
 export function UUID(): string {
     return 'xxxxxxxxxxxx4xxxyxxxxxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
         var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
@@ -18,7 +25,7 @@ export class BaseComponent {
     @Input() public label: string;
 
     private __cycles__: Map<string, Array<string>> = new Map<string, Array<string>>();
-    private __subscriptions__: Array<Subscription> = [];
+    private __subscriptions__: Array<InternalSubscription> = [];
 
     protected _isValid: boolean = true;
 
@@ -42,7 +49,7 @@ export class BaseComponent {
 
     private ngOnDestroy() {
         this._runCycle('destroy');
-        this.__subscriptions__.forEach(s => s.unsubscribe());
+        this.__subscriptions__.map(s => s.s).forEach(s => s.unsubscribe());
     }
 
     private ngAfterViewInit() {
@@ -60,8 +67,16 @@ export class BaseComponent {
         this._runCycle('init');
     }
 
-    protected connect<T>(obs: Observable<T>, callback: (t: T) => void) {
-        this.__subscriptions__.push(obs.subscribe(callback));
+    protected connect<T>(obs: Observable<T>, callback: (t: T) => void, type: string = DEFAULT_SUBSCRIPTION_TYPE) {
+        this.__subscriptions__.push({type: type, s: obs.subscribe(callback)});
+    }
+
+    protected getAllSubscriptions(): Array<Subscription> {
+        return this.__subscriptions__.map(s => s.s);
+    }
+
+    protected getSubscriptionsByType(type: string): Array<Subscription> {
+        return this.__subscriptions__.filter(s => s.type == type).map(s => s.s);
     }
 }
 
