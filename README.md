@@ -11,6 +11,8 @@ practical and easy.
 npm install --save ng-cabled
 ```
 
+## Background
+
 ***Why is there a need***
 
 Unfortunatelly, Angular is not really oriented via extending components or
@@ -42,7 +44,7 @@ Between the arguments that I've heard since I'm doing
 Angular development, the only valid one was "use object composition". The
 others like finding different more complicated solutions just because the code
 would otherwise be more complicated are not even worth discussing. I'm not
-going to discuss the reasoning that because some misterious reason, OOP is
+going to discuss the reasoning that because some misterious reason OOP is
 evil. 
 
 Regarding object composition, I've tried this and it poses one major issue:
@@ -68,12 +70,15 @@ const c = Object.create(Object.assign({}, A, B));
 ```
 
 Following such a code, `c` will be of type `any`, because `Object.create`
-returns `any`. So, good luck finding definitions, references and so on. Of
+returns `any`. So, good luck finding definitions, references, and so on. Of
 course, a solution would be to have a lot of interfaces, but this is a poor
-solution, compared with just extending the damn class. That is the normal,
-straignt forward solution. So, until the IDE's and the tools (and I think also
+solution compared with just extending the damn class. That is the 
+straightforward solution. So, until the IDE's and the tools (and I think also
 the typescript language) will catch up with this, object composition is simply
-not a solution to the problems enumerated previously.
+not a useful practical solution to the problems enumerated previously.
+
+
+***Challenges***
 
 But, when extending components and services in Angular, we are facing some
 major issues:
@@ -84,7 +89,10 @@ major issues:
   the private dependencies of the component or service we want to extend. 
 * A parent component implementing one of the life cycle hooks (like
   `ngOninit`) would risk that hook being overwritten in a child class and so
-  having it's behaviour broken.
+  having its behaviour broken.
+
+
+***ng-cabled solution***
 
 In order to solve this issues, this library provides a few decorators:
 
