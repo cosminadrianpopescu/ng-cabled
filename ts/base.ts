@@ -1,0 +1,78 @@
+import {Directive, Injector, Input, SimpleChanges} from "@angular/core";
+import {Observable, Subscription} from "rxjs";
+import {CycleType, DecoratedClass, getCycles, processAllInjectors, processPostConstruct} from ".";
+
+export function UUID(): string {
+    return 'xxxxxxxxxxxx4xxxyxxxxxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
+}
+
+@Directive({
+    selector: 'b-base-component'
+})
+@DecoratedClass
+export class BaseComponent {
+    @Input() public id: string;
+    @Input() public label: string;
+
+    private __cycles__: Map<string, Array<string>> = new Map<string, Array<string>>();
+    private __subscriptions__: Array<Subscription> = [];
+
+    protected _isValid: boolean = true;
+
+    constructor() {
+        const cycles = getCycles(this.constructor);
+        const m = this.__cycles__;
+        cycles.forEach(c => {
+            const key = c.arg as string;
+            if (!m.has(key)) {
+                m.set(key, []);
+            }
+
+            m.get(key).push(c.prop);
+        });
+    }
+
+    private _runCycle(cycle: CycleType, args?: any) {
+        const cycles = [].concat(this.__cycles__.get(cycle) || []);
+        cycles.reverse().forEach(method => this[method](args));
+    }
+
+    private ngOnDestroy() {
+        this._runCycle('destroy');
+        this.__subscriptions__.forEach(s => s.unsubscribe());
+    }
+
+    private ngAfterViewInit() {
+        this._runCycle('afterViewInit');
+    }
+
+    private ngOnChanges(changes: SimpleChanges) {
+        this._runCycle('change', changes);
+    }
+
+    private async ngOnInit() {
+        if (!this.id) {
+            this.id = UUID();
+        }
+        this._runCycle('init');
+    }
+
+    protected connect<T>(obs: Observable<T>, callback: (t: T) => void) {
+        this.__subscriptions__.push(obs.subscribe(callback));
+    }
+}
+
+export class BaseModule {
+    constructor(_inj: Injector) {
+        if (!_inj) {
+            console.error('You are extending BaseModule without providing the injector.');
+            throw 'INJECTOR_NOT_PASSED';
+        }
+
+        processAllInjectors(_inj);
+        processPostConstruct(_inj);
+    }
+}
