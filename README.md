@@ -271,7 +271,7 @@ Notice how ugly this is and also notice all the boilerplate code that we need
 to write in each component (this code has to appear in each component
 subscribing to an observable). Ugh... Ugly, ugly, ugly. 
 
-Now, compare this to this beauty:
+Now, compare this ugly thing with the following beauty:
 
 ### Ng-cabled way:
 
