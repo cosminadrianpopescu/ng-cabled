@@ -25,9 +25,9 @@ from a base component is very usefull:
   label input or to use an ID input). Also, I want this ID to be initialized
   by default with an UID if not defined by the user. 
 * I want proper observables subscriptions handling without a lot of
-  boilerplate code and of course without repeating myself over and over
-  again (and yes, I also want to unsubscribe even if I know that the service
-  that I'm subscribing to is just a REST call).
+  boilerplate code and of course without repeating myself over and over again
+  (and yes, I also want to unsubscribe even if I know that the service that
+  I'm subscribing to is just a REST call).
 * I want to have some common behavior (for example I would like a dropdown
   component and an autocomplete component to have a common behaviour regarding
   the data source and the sharing of the model).
@@ -40,16 +40,15 @@ solution.
 
 ***Counter-arguments / other options / ...***
 
-Between the arguments that I've heard since I'm doing
-Angular development, the only valid one was "use object composition". The
-others like finding different more complicated solutions just because the code
-would otherwise be more complicated are not even worth discussing. I'm not
-going to discuss the reasoning that because some misterious reason OOP is
-evil. 
+Between the arguments that I've heard since I'm doing Angular development, the
+only valid one was "use object composition". The others like finding different
+more complicated solutions just because the code would otherwise be more
+complicated are not even worth discussing. I'm not going to discuss the
+reasoning that because some misterious reason OOP is evil. 
 
 Regarding object composition, I've tried this and it poses one major issue:
-when it comes to modern developing tools, you are left on your own. There is no
-IDE nor LSP server for angular which will properly interpret something like
+when it comes to modern developing tools, you are left on your own. There is
+no IDE nor LSP server for angular which will properly interpret something like
 this:
 
 ```
@@ -72,7 +71,7 @@ const c = Object.create(Object.assign({}, A, B));
 Following such a code, `c` will be of type `any`, because `Object.create`
 returns `any`. So, good luck finding definitions, references, and so on. Of
 course, a solution would be to have a lot of interfaces, but this is a poor
-solution compared with just extending the damn class. That is the 
+solution compared with just extending the damn class. That is the
 straightforward solution. So, until the IDE's and the tools (and I think also
 the typescript language) will catch up with this, object composition is simply
 not a useful practical solution to the problems enumerated previously.
@@ -104,8 +103,6 @@ annotation on top of all the classes that should contain any of the decorators
 provided by the library. This will tell the compiler to check the class for
 dependencies. And then, you add the `Cabled` annotation on all the properties
 that should be automatically injected. 
-
-Example:
 
 ***Normal Angular way***
 
@@ -142,7 +139,8 @@ export class ChildComponent extends ParentComponent {
 ```
 
 Notice how the `ChildComponent` now does not know and does not care about the
-internal private dependencies of `ParentComponent` (i.e. the private `ParentComponentService`).
+internal private dependencies of `ParentComponent` (i.e. the private
+`ParentComponentService`).
 
 The first argument of the `Cabled` annotation can be any Angular accepted
 dependency injection token (it can be a class, it can be an `InjectionToken`,
@@ -154,10 +152,10 @@ token is not solved by the dependency injection, no error is thrown and the
 property is initialized with the given default value.
 
 The only issue this poses is that you have no way to know in which order the
-services will be instantiated. So, you can't use 
-constructors for anything (so to let any injected service get instantiated). If you need to run some initializing code for a
-given service, just move that code in a private method annotated with the
-`PostConstruct` annotation like this:
+services will be instantiated. So, you can't use constructors for anything (so
+to let any injected service get instantiated). If you need to run some
+initializing code for a given service, just move that code in a private method
+annotated with the `PostConstruct` annotation like this:
 
 ```
 @Injectable()
@@ -202,11 +200,11 @@ export class ChildComponent extends ParentComponent implements OnInit {
 
 ```
 
-Notice how now the behaviour of the component is changed. The one who extends the
-`ParentComponent` needs to know to call `super.ngOnInit()` in `ChildComponent`'s `ngOnInit`.
-Of course, when you have to deal with big development
-teams, such a mistake could slip in the code resulting in unexpecting
-behaviour. 
+Notice how now the behaviour of the component is changed. The one who extends
+the `ParentComponent` needs to know to call `super.ngOnInit()` in
+`ChildComponent`'s `ngOnInit`.  Of course, when you have to deal with big
+development teams, such a mistake could slip in the code resulting in
+unexpecting behaviour. 
 
 The solution to this problem is given by the `NgCycle` annotation. When using
 this library, every component should extend `BaseComponent` class inside the
@@ -215,11 +213,13 @@ package. The `BaseComponent` contains the `ngOnInit`, `ngOnDestroy`,
 of overriding those methods in a child class, since that would result in a
 compilation error. 
 
-But this means that you also can't use them in `ChildComponent`. A better of way of implementing
-lifecycle hooks (that Angular should've implemented itself) is via an annotation. So, instead of using any of those 4 lifecycles, use the `NgCycle`
-annotation with any of the arguments: `'init'`, `'afterViewInit'`, `'destroy'`
-or `'change'`. Those method will be run on each of the respective cycle. The
-example from above can be rewritten safely and more elegant like this:
+But this means that you also can't use them in `ChildComponent`. A better of
+way of implementing lifecycle hooks (that Angular should've implemented
+itself) is via an annotation. So, instead of using any of those 4 lifecycles,
+use the `NgCycle` annotation with any of the arguments: `'init'`,
+`'afterViewInit'`, `'destroy'` or `'change'`. Those method will be run on each
+of the respective cycle. The example from above can be rewritten safely and
+more elegant like this:
 
 ```
 @DecoratedClass
@@ -250,10 +250,10 @@ the expected behaviour.
 
 ### Bonus: handling of observables
 
-`BaseComponent` brings as bonus the handling of the observables
-subscription. By extending `BaseComponent` and using `BaseComponent::connect` function 
-instead of subscribing to observables you can forget about
-observables and unsubscribing from them. 
+`BaseComponent` brings as bonus the handling of the observables subscription.
+By extending `BaseComponent` and using `BaseComponent::connect` function
+instead of subscribing to observables you can forget about observables and
+unsubscribing from them. 
 
 ***Angular way of handling subscriptions***
 
@@ -316,9 +316,9 @@ export class MyCoolComponent extends BaseComponent {
 Ta daaaaa!!!! This is it. Nice, right? No boiler plate code, no worries about
 unsubscribing. 
 
-Also, you can have a third parameter to the
-`BaseComponent::connect` function, in case you want to group the subscriptions
-to manually unsubscribe from them at a certain point, like this:
+Also, you can have a third parameter to the `BaseComponent::connect` function,
+in case you want to group the subscriptions to manually unsubscribe from them
+at a certain point, like this:
 
 ```
 const SUBSCRIPTION_TYPE = 'my-separate-subscription';
@@ -384,9 +384,9 @@ Good luck.
 
 ### Bonus for test cases
 
-You also have the annotations `NgTestUnit` and `NgTest`,
-`FNgTest` and `XNgTest`. These annotations are used if you want to generate
-test cases instead of using directly `describe` and `it`.
+You also have the annotations `NgTestUnit` and `NgTest`, `FNgTest` and
+`XNgTest`. These annotations are used if you want to generate test cases
+instead of using directly `describe` and `it`.
 
 In my oppinion, using `it`, `xit` and `fit` together with `describe` and
 `configureTestingModule` is a lot of boilerplate code. So, I prefer to do my
