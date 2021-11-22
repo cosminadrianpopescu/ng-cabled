@@ -30,7 +30,11 @@ export const TEST_CASES_ONLY: Map<Function, Array<TestCase>> = new Map<Function,
 
 export type DecoratedClass = {ctor: ClassConstructor, args: Array<any>};
 export type DecoratedClasses = Map<string, Array<DecoratedClass>>;
-export type ClassConstructor = {new(...args: any): any, prototype: any};
+export interface ClassConstructor {
+    new (...args: any): any;
+    prototype: any;
+}
+// export type ClassConstructor = {new(...args: any): any, prototype: any};
 export type ClassDecorators = Map<Function, Map<string, Array<DecoratorMetadata>>>;
 export type DeserializableType<T> = Type<T> | Convertor<T> | 'date';
 export type DecoratorMetadata = {prop: string, arg: DecoratorParameterType};
@@ -124,7 +128,7 @@ export function processPostConstruct(inj: Injector) {
         });
 }
 
-function __decorateProperty(decorationName: string, arg: DecoratorParameterType): any {
+export function __decorateProperty(decorationName: string, arg: DecoratorParameterType): any {
     return function(ctor: ClassConstructor, property: string) {
         const c = ctor.constructor;
         let map: ClassDecorators = Reflect.getOwnMetadata(DECORATORS, Object);
@@ -148,7 +152,7 @@ function __decorateProperty(decorationName: string, arg: DecoratorParameterType)
     };
 }
 
-function __decorateClass(ctor: ClassConstructor, decoration: string, args?: any) {
+export function __decorateClass(ctor: ClassConstructor, decoration: string, args?: any) {
     let classes: DecoratedClasses = Reflect.getOwnMetadata(DECORATED_CLASSES, Object);
     if (!classes) {
         classes = new Map<string, Array<DecoratedClass>>();
@@ -163,7 +167,7 @@ function __decorateClass(ctor: ClassConstructor, decoration: string, args?: any)
     return ctor;
 }
 
-function __getDecorations(ctor: ClassConstructor, key: string): Array<DecoratorMetadata> {
+export function __getDecorations(ctor: ClassConstructor, key: string): Array<DecoratorMetadata> {
     if (ctor == null) {
         return [];
     }
@@ -180,7 +184,7 @@ function __getDecorations(ctor: ClassConstructor, key: string): Array<DecoratorM
     return result.concat(__getDecorations(Object.getPrototypeOf(ctor), key));
 }
 
-function __getDecoratedClasses(key: string): Array<DecoratedClass> {
+export function __getDecoratedClasses(key: string): Array<DecoratedClass> {
     const classes: DecoratedClasses = Reflect.getOwnMetadata(DECORATED_CLASSES, Object);
     if (!classes) {
         return [];

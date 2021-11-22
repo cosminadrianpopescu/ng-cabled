@@ -1,4 +1,4 @@
-import {Directive, Injector, Input, SimpleChanges} from "@angular/core";
+import {Injector, SimpleChanges} from "@angular/core";
 import {Observable, Subscription} from "rxjs";
 import {CycleType, DecoratedClass, getCycles, processAllInjectors, processPostConstruct} from ".";
 
@@ -16,13 +16,9 @@ export function UUID(): string {
     });
 }
 
-@Directive({
-    selector: 'b-base-component'
-})
 @DecoratedClass
 export class BaseComponent {
-    @Input() public id: string;
-    @Input() public label: string;
+    public id: string;
 
     private __cycles__: Map<string, Array<string>> = new Map<string, Array<string>>();
     private __subscriptions__: Array<InternalSubscription> = [];
