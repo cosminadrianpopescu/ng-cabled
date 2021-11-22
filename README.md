@@ -382,7 +382,7 @@ to use all these marvels that I just presented to you.
 
 Good luck. 
 
-### Bonus for tests cases
+### Bonus for test cases
 
 You also have the annotations `NgTestUnit` and `NgTest`,
 `FNgTest` and `XNgTest`. These annotations are used if you want to generate
