@@ -176,10 +176,10 @@ The `PostConstruct` annotation will not work on components (is meant to be
 used only for services). For components see the next paragraph (basically you
 should use life cycle hooks).
 
-## `NgCycle` annotation
+### `NgCycle` annotation
 
 This annotation will solve the second problem of extending components: when
-using any of the life cycle hooks, they can be later overriden in a child
+using any of the lifecycle hooks, they can be later overriden in a child
 component. 
 
 Example: 
@@ -197,15 +197,16 @@ export class ParentComponent implements OnInit {
 export class ChildComponent extends ParentComponent implements OnInit {
     private _myProperty: string;
     ngOnInit() {
+        super.ngOnInit(); //problematic - see below
         this._myProperty = 'value';
     }
 }
 
 ```
 
-Notice how now the behaviour of the component is changed. The user of the
-`ParentComponents` needs to know to call in `ChildComponent`'s `ngOnInit` the
-`super.ngOnInit()`. Of course, when we have to deal with big development
+Notice how now the behaviour of the component is changed. The one who extends the
+`ParentComponent` needs to know to call `super.ngOnInit()` in `ChildComponent`'s `ngOnInit`.
+Of course, when you have to deal with big development
 teams, such a mistake could slip in the code resulting in unexpecting
 behaviour. 
 
@@ -216,9 +217,8 @@ package. The `BaseComponent` contains the `ngOnInit`, `ngOnDestroy`,
 of overriding those methods in a child class, since that would result in a
 compilation error. 
 
-But this means that you also can't use them. A better of way of implementing
-life cycle hooks (that Angular should've implemented itself) is via a
-decorator. So, instead of using any of those 4 cycles, use the `NgCycle`
+But this means that you also can't use them in `ChildComponent`. A better of way of implementing
+lifecycle hooks (that Angular should've implemented itself) is via an annotation. So, instead of using any of those 4 lifecycles, use the `NgCycle`
 annotation with any of the arguments: `'init'`, `'afterViewInit'`, `'destroy'`
 or `'change'`. Those method will be run on each of the respective cycle. The
 example from above can be rewritten safely and more elegant like this:
@@ -227,7 +227,6 @@ example from above can be rewritten safely and more elegant like this:
 @DecoratedClass
 export class ParentComponent extends BaseComponent {
     @Input() public id: string;
-
     @NgCycle('init')
     private __initParentComponent__() {
         if (!id) {
@@ -239,7 +238,6 @@ export class ParentComponent extends BaseComponent {
 @DecoratedClass
 export class ChildComponent extends ParentComponent {
     private _myProperty: string;
-
     @NgCycle('init')
     private __initChildComponent__() {
         this._myProperty = 'value';
@@ -251,9 +249,9 @@ export class ChildComponent extends ParentComponent {
 Problem solved. No danger of overwritting the parent class method and breaking
 the expected behaviour. 
 
-Another bonus the `BaseComponent` is bringing is handling of the observables
-subscription. By extending `BaseComponent` and then instead of subscribing to
-observables, use `BaseComponent::connect` function, you can forget about
+`BaseComponent` brings as bonus the handling of the observables
+subscription. By extending `BaseComponent` and using `BaseComponent::connect` function 
+instead of subscribing to observables you can forget about
 observables and unsubscribing from them. 
 
 Example: 
