@@ -48,7 +48,7 @@ going to discuss the reasoning that because some misterious reason OOP is
 evil. 
 
 Regarding object composition, I've tried this and it poses one major issue:
-when it comes to modern developing tools, we are left on our own. There is no
+when it comes to modern developing tools, you are left on your own. There is no
 IDE nor LSP server for angular which will properly interpret something like
 this:
 
@@ -80,13 +80,13 @@ not a useful practical solution to the problems enumerated previously.
 
 ***Challenges***
 
-But, when extending components and services in Angular, we are facing some
+But, when extending components and services in Angular, you are facing some
 major issues:
 
 * Due to the dependency injection made via constructors (one of the worst
   patterns ever invented, but this is another discussion that you can see
-  [here](https://github.com/cosminadrianpopescu/tsdim)) we need to know all
-  the private dependencies of the component or service we want to extend. 
+  [here](https://github.com/cosminadrianpopescu/tsdim)) you need to know all
+  the private dependencies of the component or service you want to extend. 
 * A parent component implementing one of the life cycle hooks (like
   `ngOninit`) would risk that hook being overwritten in a child class and so
   having its behaviour broken.
@@ -153,9 +153,9 @@ represent the default value. This would make the injection optional. If the
 token is not solved by the dependency injection, no error is thrown and the
 property is initialized with the given default value.
 
-The only issue this poses is that we have no way to know in which order the
-services will be instantiated. So, we can't use any of the services in
-constructors. If we need to run some initializing code in the constructor of a
+The only issue this poses is that you have no way to know in which order the
+services will be instantiated. So, you can't use 
+constructors for anything (so to let any injected service get instantiated). If you need to run some initializing code for a
 given service, just move that code in a private method annotated with the
 `PostConstruct` annotation like this:
 
