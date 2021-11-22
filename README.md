@@ -182,8 +182,6 @@ This annotation will solve the second problem of extending components: when
 using any of the lifecycle hooks, they can be later overriden in a child
 component. 
 
-Example: 
-
 ```
 export class ParentComponent implements OnInit {
     @Input() public id: string;
@@ -249,14 +247,15 @@ export class ChildComponent extends ParentComponent {
 Problem solved. No danger of overwritting the parent class method and breaking
 the expected behaviour. 
 
+
+### Bonus: handling of observables
+
 `BaseComponent` brings as bonus the handling of the observables
 subscription. By extending `BaseComponent` and using `BaseComponent::connect` function 
 instead of subscribing to observables you can forget about
 observables and unsubscribing from them. 
 
-Example: 
-
-### Angular way of handling subscriptions:
+***Angular way of handling subscriptions***
 
 ```
 @Component({
@@ -289,7 +288,7 @@ subscribing to an observable). Ugh... Ugly, ugly, ugly.
 
 Now, compare this ugly thing with the following beauty:
 
-### Ng-cabled way:
+***Ng-cabled way***
 
 ```
 @Component({
@@ -308,14 +307,16 @@ export class MyCoolComponent extends BaseComponent {
         );
         this.connect(
             this._mySecondService.otherObservable$, 
-            () => this._doStuff(),
+            () => this._doOtherStuff(),
         )
     }
 }
 ```
 
 Ta daaaaa!!!! This is it. Nice, right? No boiler plate code, no worries about
-unsubscribing. Also, you can have a third parameter to the
+unsubscribing. 
+
+Also, you can have a third parameter to the
 `BaseComponent::connect` function, in case you want to group the subscriptions
 to manually unsubscribe from them at a certain point, like this:
 
@@ -355,8 +356,10 @@ Yes, I know, I know, I could've used a `switchMap` for this example. But this
 is just an example to give you an idea. Maybe there are scenarios where you
 can't use a `switchMap`, I don't know. And fine. If you really think that
 there is no other use case, just don't use this feature. You can still use the
-other beauties of this library right? And I'm sure for those you don't have
+other beauties of this library, right? And I'm sure for those you don't have
 such a strong counter argument. You see?
+
+### BaseModule
 
 In order to use all these beauties, you only need in each of your module to
 pass the `Injector` to a parent module. So, in order for these annotations to
@@ -379,7 +382,9 @@ to use all these marvels that I just presented to you.
 
 Good luck. 
 
-*NOTE*: As a bonus, you also have the annotations `NgTestUnit` and `NgTest`,
+### Bonus for tests cases
+
+You also have the annotations `NgTestUnit` and `NgTest`,
 `FNgTest` and `XNgTest`. These annotations are used if you want to generate
 test cases instead of using directly `describe` and `it`.
 
