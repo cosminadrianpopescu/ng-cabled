@@ -1,6 +1,6 @@
 {
     "name": "ng-cabled",
-    "version": "1.0.1",
+    "version": "1.0.4",
     "description": "Library for ease of creating extensible angular components",
     "type": "module",
     "main": "dist/index.js",
@@ -10,10 +10,10 @@
         "build": "tsc --diagnostics",
         "pre": "npm run build && cp package.json ./dist/package.json",
         "pack": "npm run pre && cd dist && npm pack",
-        "publish": "npm run pre && cd dist && npm publish"
+        "publish": "npm run pre && cp README.md ./dist/README.md && cd dist && npm publish"
     },
     "author": "Cosmin Popescu",
-    "homepage": "https://github.com/cosminadrianpopescu/ng-spring",
+    "homepage": "https://github.com/cosminadrianpopescu/ng-cabled",
     "license": "GPL-3.0-or-later",
     "devDependencies": {
         "@angular/compiler": "^13.0.2",

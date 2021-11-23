@@ -110,6 +110,7 @@ export function processInjectors(ctor: ClassConstructor, inj: Injector) {
     const injectors = getInjectors(ctor);
     injectors.forEach(i => {
         const a = i.arg as NgServiceArguments;
+        Reflect.defineProperty(ctor.prototype, i.prop, { enumerable: true, writable: true, configurable: true });
         ctor.prototype[i.prop] = inj.get(a.type as Type<any>, typeof(a.def) == 'undefined' ? undefined : a.def, InjectFlags.Default);
     });
 }
@@ -146,7 +147,7 @@ export function __decorateProperty(decorationName: string, arg: DecoratorParamet
         }
         map.get(c).get(decorationName).push({prop: property, arg: arg});
 
-        Reflect.defineProperty(ctor, property, { enumerable: true, writable: true });
+        Reflect.defineProperty(ctor, property, { enumerable: true, writable: true, configurable: true });
         Reflect.defineMetadata(DECORATORS, map, Object);
         return ctor;
     };

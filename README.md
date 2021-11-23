@@ -114,7 +114,7 @@ export class ParentComponent {
 @Component({
     ...
 })
-export class ChildComponent {
+export class ChildComponent extends ParentComponent {
     constructor(_baseClassPrivateService: ParentComponentService, private _childPrivateService: ChildComponentService) {
         super(_baseClassPrivateService);
     }
@@ -200,11 +200,11 @@ export class ChildComponent extends ParentComponent implements OnInit {
 
 ```
 
-Notice how now the behaviour of the component is changed. The one who extends
-the `ParentComponent` needs to know to call `super.ngOnInit()` in
-`ChildComponent`'s `ngOnInit`.  Of course, when you have to deal with big
-development teams, such a mistake could slip in the code resulting in
-unexpecting behaviour. 
+Notice how now the behaviour of the component is changed if you don't call
+`super.ngOnInit()`. The one who extends the `ParentComponent` needs to know to
+call `super.ngOnInit()` in `ChildComponent`'s `ngOnInit`.  Of course, when you
+have to deal with big development teams, such a mistake could slip in the code
+resulting in unexpecting behaviour. 
 
 The solution to this problem is given by the `NgCycle` annotation. When using
 this library, every component should extend `BaseComponent` class inside the
