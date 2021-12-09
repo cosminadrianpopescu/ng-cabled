@@ -98,10 +98,14 @@ export function getTestcases<T extends DecoratorParameterType>(instance: Functio
 
 export function processAllInjectors(inj: Injector) {
     const classes = __getDecoratedClasses(WITH_SERVICES);
-    classes.map(c => c.ctor).filter(c => !c[SERVICE_INSTANTIATED]).forEach(c => {
-        processInjectors(c, inj);
-        c[SERVICE_INSTANTIATED] = true;
-    });
+    classes
+        .map(c => ({c: c.ctor, props: Object.getOwnPropertyNames(c.ctor)}))
+        .filter(c => c.props.indexOf(SERVICE_INSTANTIATED) == -1)
+        .map(c => c.c)
+        .forEach(c => {
+            processInjectors(c, inj);
+            Object.defineProperty(c, SERVICE_INSTANTIATED, {});
+        });
 }
 
 export function processInjectors(ctor: ClassConstructor, inj: Injector) {
