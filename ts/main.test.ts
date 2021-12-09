@@ -37,7 +37,7 @@ const loadFolder = async function(path: string) {
 
     await Promise.all(promises);
 };
-(async () => {
+export async function startTesting() {
     await loadFolder('.');
 
     const units = getTestunits();
@@ -67,4 +67,4 @@ const loadFolder = async function(path: string) {
     });
 
     j.execute();
-})();
+};
