@@ -2,16 +2,6 @@
 import {InjectFlags, InjectionToken, Injector, Provider, Type} from '@angular/core';
 import 'reflect-metadata';
 
-export class ConvertorContext {
-    source: any;
-    instance: any;
-}
-
-export interface Convertor<T> {
-    convert(src: any, ctx?: ConvertorContext): T;
-    convertFrom?(src: T): any;
-}
-
 export type CycleType = 'destroy' | 'afterViewInit' | 'change' | 'init';
 export type TestCase = {name: string, x: boolean, f: boolean};
 const DECORATED_CLASSES = '__decoratedclasses__';
@@ -24,6 +14,7 @@ const CYCLES_KEY = '__cycles__';
 const POST_CONSTRUCT_KEY = '__post-construct__';
 const TESTS_KEY = '__testsunits__';
 const WITH_SERVICES = '__service__';
+const WATCHERS_KEY = '__watcherskey__';
 
 export const TEST_CASES: Map<Function, Array<TestCase>> = new Map<Function, Array<TestCase>>();
 export const TEST_CASES_ONLY: Map<Function, Array<TestCase>> = new Map<Function, Array<TestCase>>();
@@ -35,15 +26,18 @@ export interface ClassConstructor {
     prototype: any;
 }
 // export type ClassConstructor = {new(...args: any): any, prototype: any};
-export type ClassDecorators = Map<Function, Map<string, Array<DecoratorMetadata>>>;
-export type DeserializableType<T> = Type<T> | Convertor<T> | 'date';
-export type DecoratorMetadata = {prop: string, arg: DecoratorParameterType};
+export type ClassDecorators<T extends DecoratorParameterType> = Map<Function, Map<string, Array<T>>>;
+export type DecoratorMetadata<T extends DecoratorParameterType> = {prop: string, arg: T};
 export type NgServiceParamType = Type<any> | string | InjectionToken<any>;
 export type NgServiceArguments = {type: NgServiceParamType, def?: any};
-export type DecoratorParameterType = CycleType | DeserializableType<any> | TestCase | NgServiceArguments;
+export type DecoratorParameterType = CycleType | TestCase | NgServiceArguments | string;
 
 export function Cabled(type: NgServiceParamType, def?: any) {
     return __decorateProperty(CABLED_KEY, {type: type, def: def});
+}
+
+export function Watcher(prop: string) {
+    return __decorateProperty(WATCHERS_KEY, prop);
 }
 
 export function NgCycle(cycle: CycleType) {
@@ -77,15 +71,15 @@ export function XNgTest(name?: string) {
     return __decorateProperty(TESTS_KEY, <TestCase>{ name: name, x: true, f: false });
 }
 
-export function getInjectors(ctor: ClassConstructor): Array<DecoratorMetadata> {
+export function getInjectors<T extends DecoratorParameterType>(ctor: ClassConstructor): Array<DecoratorMetadata<T>> {
     return __getDecorations(ctor.prototype, CABLED_KEY);
 }
 
-export function getCycles(instance: Function): Array<DecoratorMetadata> {
+export function getCycles<T extends DecoratorParameterType>(instance: Function): Array<DecoratorMetadata<T>> {
     return __getDecorations(instance.prototype, CYCLES_KEY);
 }
 
-export function getPostconstruct(instance: Function): Array<DecoratorMetadata> {
+export function getPostconstruct<T extends DecoratorParameterType>(instance: Function): Array<DecoratorMetadata<T>> {
     return __getDecorations(instance.prototype, POST_CONSTRUCT_KEY);
 }
 
@@ -94,7 +88,7 @@ export function getTestunits(): Array<{new(...args: any): any; prototype: any;}>
     return classes.map(c => c.ctor);
 }
 
-export function getTestcases(instance: Function): Array<DecoratorMetadata> {
+export function getTestcases<T extends DecoratorParameterType>(instance: Function): Array<DecoratorMetadata<T>> {
     return __getDecorations(instance.prototype, TESTS_KEY);
 }
 
@@ -129,13 +123,13 @@ export function processPostConstruct(inj: Injector) {
         });
 }
 
-export function __decorateProperty(decorationName: string, arg: DecoratorParameterType): any {
+export function __decorateProperty<T extends DecoratorParameterType>(decorationName: string, arg: T): any {
     return function(ctor: ClassConstructor, property: string) {
         const c = ctor.constructor;
-        let map: ClassDecorators = Reflect.getOwnMetadata(DECORATORS, Object);
+        let map: ClassDecorators<DecoratorParameterType> = Reflect.getOwnMetadata(DECORATORS, Object);
 
         if (!map) {
-            map = new Map<ClassConstructor, Map<string, Array<DecoratorMetadata>>>();
+            map = new Map<ClassConstructor, Map<string, Array<DecoratorMetadata<DecoratorParameterType>>>>();
         }
 
         if (!map.get(c)) {
