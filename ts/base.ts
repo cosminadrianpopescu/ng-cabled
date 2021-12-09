@@ -1,6 +1,6 @@
 import {Injector, SimpleChanges} from "@angular/core";
 import {Observable, Subscription} from "rxjs";
-import {CycleType, DecoratedClass, getCycles, processAllInjectors, processPostConstruct} from ".";
+import {CycleType, DecoratedClass, DecoratorMetadata, getCycles, getWatchers, processAllInjectors, processPostConstruct} from ".";
 
 const DEFAULT_SUBSCRIPTION_TYPE = '__defaultsubscriptiontype__';
 
@@ -21,11 +21,14 @@ export class BaseComponent {
     public id: string;
 
     private __cycles__: Map<string, Array<string>> = new Map<string, Array<string>>();
+    private __watchers__: Array<DecoratorMetadata<string>> = [];
     private __subscriptions__: Array<InternalSubscription> = [];
 
     protected _isValid: boolean = true;
 
     constructor() {
+        this.__watchers__ = getWatchers(this.constructor);
+        this.__watchers__.reverse();
         const cycles = getCycles(this.constructor);
         const m = this.__cycles__;
         cycles.forEach(c => {
@@ -53,6 +56,7 @@ export class BaseComponent {
     }
 
     private ngOnChanges(changes: SimpleChanges) {
+        this.__watchers__.filter(w => !!changes[w.arg]).forEach(w => this[w.prop](changes[w.arg]));
         this._runCycle('change', changes);
     }
 

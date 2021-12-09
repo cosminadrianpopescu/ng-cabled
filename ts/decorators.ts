@@ -26,7 +26,7 @@ export interface ClassConstructor {
     prototype: any;
 }
 // export type ClassConstructor = {new(...args: any): any, prototype: any};
-export type ClassDecorators<T extends DecoratorParameterType> = Map<Function, Map<string, Array<T>>>;
+export type ClassDecorators<T extends DecoratorParameterType> = Map<Function, Map<string, Array<DecoratorMetadata<T>>>>;
 export type DecoratorMetadata<T extends DecoratorParameterType> = {prop: string, arg: T};
 export type NgServiceParamType = Type<any> | string | InjectionToken<any>;
 export type NgServiceArguments = {type: NgServiceParamType, def?: any};
@@ -77,6 +77,10 @@ export function getInjectors<T extends DecoratorParameterType>(ctor: ClassConstr
 
 export function getCycles<T extends DecoratorParameterType>(instance: Function): Array<DecoratorMetadata<T>> {
     return __getDecorations(instance.prototype, CYCLES_KEY);
+}
+
+export function getWatchers<T extends DecoratorParameterType>(instance: Function): Array<DecoratorMetadata<T>> {
+    return __getDecorations(instance.prototype, WATCHERS_KEY);
 }
 
 export function getPostconstruct<T extends DecoratorParameterType>(instance: Function): Array<DecoratorMetadata<T>> {
@@ -133,7 +137,7 @@ export function __decorateProperty<T extends DecoratorParameterType>(decorationN
         }
 
         if (!map.get(c)) {
-            map.set(c, new Map<string, Array<DecoratorMetadata>>());
+            map.set(c, new Map<string, Array<DecoratorMetadata<DecoratorParameterType>>>());
         }
         
         if (!Array.isArray(map.get(c).get(decorationName))) {
@@ -162,12 +166,12 @@ export function __decorateClass(ctor: ClassConstructor, decoration: string, args
     return ctor;
 }
 
-export function __getDecorations(ctor: ClassConstructor, key: string): Array<DecoratorMetadata> {
+export function __getDecorations<T extends DecoratorParameterType>(ctor: ClassConstructor, key: string): Array<DecoratorMetadata<T>> {
     if (ctor == null) {
         return [];
     }
-    const decorators: ClassDecorators = Reflect.getOwnMetadata(DECORATORS, Object);
-    let result: Array<DecoratorMetadata> = [];
+    const decorators: ClassDecorators<T> = Reflect.getOwnMetadata(DECORATORS, Object);
+    let result: Array<DecoratorMetadata<T>> = [];
     if (!decorators) {
         return [];
     }
