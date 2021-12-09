@@ -37,8 +37,8 @@ const loadFolder = async function(path: string) {
 
     await Promise.all(promises);
 };
-export async function startTesting() {
-    await loadFolder('.');
+(async () => {
+    await loadFolder(process.cwd());
 
     const units = getTestunits();
 
@@ -67,4 +67,4 @@ export async function startTesting() {
     });
 
     j.execute();
-};
+})();
