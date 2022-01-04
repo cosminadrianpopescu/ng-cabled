@@ -1,6 +1,6 @@
 import {InjectionToken, SimpleChange, SimpleChanges} from '@angular/core';
 import {BaseComponent} from '../base';
-import {Cabled, DecoratedClass, FNgTest, NgCycle, NgTest, NgTestUnit, PostConstruct} from '../decorators';
+import {Cabled, DecoratedClass, FNgTest, NgCycle, NgTest, NgTestUnit, PostConstruct, Watcher} from '../decorators';
 
 const TOKEN = new InjectionToken<string>(undefined);
 
@@ -30,6 +30,16 @@ class DummyComponent extends BaseComponent {
     @NgCycle('destroy')
     private _destroy() {
         this.d = 'destroy';
+    }
+}
+
+@DecoratedClass
+class SecondDummyComponent extends BaseComponent {
+    public a: string;
+
+    @Watcher('a')
+    private _watchA() {
+        expect(this.a).toEqual('a');
     }
 }
 
@@ -107,8 +117,9 @@ export class DecoratorsTest {
         expect(this._notProvService).toBeNull();
     }
 
-    @NgTest()
+    @FNgTest()
     public testPostConstruct() {
+        console.log('i am ', this);
         expect(this._service.e).toEqual('post');
     }
 
@@ -116,6 +127,13 @@ export class DecoratorsTest {
     public testChildComponent() {
         const c = new DummyChildComponent();
         this._assertComponent(c);
+    }
+
+    @NgTest()
+    public testWatcher() {
+        const c = new SecondDummyComponent();
+        const ch = {a: new SimpleChange(undefined, 'a', true)};
+        c['ngоnChanges'](ch);
     }
 }
 

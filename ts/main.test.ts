@@ -25,8 +25,8 @@ const loadFolder = async function(path: string) {
     let promises = [];
     const files = fs.readdirSync(path);
     files
-        .filter(f => f.match(/\.spec\.js$/g))
-        .forEach(f => promises.push(import(`${path}/${f.replace(/\.js$/g, '')}`)));
+        .filter(f => f.match(/\.spec\.m?js$/g))
+        .forEach(f => promises.push(import(`${path}/${f.replace(/\.m?js$/g, '')}`)));
 
     await Promise.all(promises);
     promises = [];
@@ -60,7 +60,7 @@ const loadFolder = async function(path: string) {
                 const callback = tc.x ? xit : tc.f ? fit : it;
                 callback(`Running test case ${tc.name || t.prop}`, () => {
                     const instance = new unit();
-                    instance[t.prop].bind(instance);
+                    return instance[t.prop].bind(instance)();
                 });
             });
         });
