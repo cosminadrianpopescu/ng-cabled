@@ -5,7 +5,7 @@
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "scripts": {
-        "test": "tsc -p tsconfig.test.json && ./tomjs && cd testing && node --enable-source-maps=true --experimental-specifier-resolution=node ./main.test.mjs",
+        "test": "tsc -p tsconfig.test.json && cd testing && ../tomjs && node --enable-source-maps=true --experimental-specifier-resolution=node ./main.test.mjs",
         "build": "tsc --diagnostics",
         "pre": "npm run build && cp package.json ./dist/package.json",
         "pack": "npm run pre && cd dist && npm pack",

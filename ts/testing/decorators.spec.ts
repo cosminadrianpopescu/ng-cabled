@@ -38,8 +38,8 @@ class SecondDummyComponent extends BaseComponent {
     public a: string;
 
     @Watcher('a')
-    private _watchA() {
-        expect(this.a).toEqual('a');
+    private _watchA(ch: SimpleChange) {
+        expect(ch.currentValue).toEqual('a');
     }
 }
 
@@ -92,7 +92,7 @@ export class DecoratorsTest {
         c['ngAfterViewInit']();
         expect(c.b).toEqual('view');
         const ch = {a: new SimpleChange(undefined, 'abc', true)};
-        c['ngоnChanges'](ch);
+        c['ngOnChanges'](ch);
         expect(c.c).toEqual(ch);
         c['ngOnDestroy']();
         expect(c.d).toEqual('destroy');
@@ -117,9 +117,8 @@ export class DecoratorsTest {
         expect(this._notProvService).toBeNull();
     }
 
-    @FNgTest()
+    @NgTest()
     public testPostConstruct() {
-        console.log('i am ', this);
         expect(this._service.e).toEqual('post');
     }
 
@@ -133,7 +132,7 @@ export class DecoratorsTest {
     public testWatcher() {
         const c = new SecondDummyComponent();
         const ch = {a: new SimpleChange(undefined, 'a', true)};
-        c['ngоnChanges'](ch);
+        c['ngOnChanges'](ch);
     }
 }
 

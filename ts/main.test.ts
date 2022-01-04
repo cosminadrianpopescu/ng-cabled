@@ -59,7 +59,8 @@ const loadFolder = async function(path: string) {
                 const tc = t.arg as any;
                 const callback = tc.x ? xit : tc.f ? fit : it;
                 callback(`Running test case ${tc.name || t.prop}`, () => {
-                    const instance = new unit();
+                    const instance = Object.create(unit.prototype);
+                    // const instance = new unit();
                     return instance[t.prop].bind(instance)();
                 });
             });
