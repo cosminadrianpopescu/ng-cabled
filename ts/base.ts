@@ -56,7 +56,18 @@ export class BaseComponent {
     }
 
     private ngOnChanges(changes: SimpleChanges) {
-        this.__watchers__.filter(w => !!changes[w.arg]).forEach(w => this[w.prop](changes[w.arg]));
+        const toRun = new Map<string, Array<string>>();
+        this.__watchers__.filter(w => !!changes[w.arg]).forEach(w => {
+            if (!toRun.has(w.prop)) {
+                toRun.set(w.prop, []);
+            }
+            toRun.get(w.prop).push(w.arg);
+        });
+        Array.from(toRun.keys()).forEach(method => {
+            const args = toRun.get(method).reduce((acc, v) => Object.assign(acc, {[v]: changes[v]}), {});
+            this[method](args);
+        })
+        // this.__watchers__.filter(w => !!changes[w.arg]).forEach(w => this[w.prop](changes[w.arg], changes));
         this._runCycle('change', changes);
     }
 
