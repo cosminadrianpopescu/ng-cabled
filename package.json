@@ -4,6 +4,7 @@
     "description": "Library for ease of creating extensible angular components",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
+    "type": "module",
     "scripts": {
         "test": "tsc -p tsconfig.test.json && cd testing && ../tomjs && node --enable-source-maps=true --experimental-specifier-resolution=node ./main.test.mjs",
         "build": "tsc --diagnostics",
