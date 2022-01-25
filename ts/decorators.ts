@@ -6,6 +6,7 @@ export type CycleType = 'destroy' | 'afterViewInit' | 'change' | 'init';
 export type TestCase = {name: string, x: boolean, f: boolean};
 const DECORATED_CLASSES = '__decoratedclasses__';
 const DECORATORS = '__decorators__';
+
 const CABLED_KEY = '__cabled__';
 const TEST_UNITS = '__testunits__';
 const SERVICE_INSTANTIATED = '__serviceinstantiated__';
@@ -21,6 +22,12 @@ export const TEST_CASES_ONLY: Map<Function, Array<TestCase>> = new Map<Function,
 
 export type DecoratedClass = {ctor: ClassConstructor, args: Array<any>};
 export type DecoratedClasses = Map<string, Array<DecoratedClass>>;
+export interface AngularComponentCtor {
+    new (...args: any): any;
+    prototype: any;
+    ɵfac: any;
+    ɵdir: any;
+}
 export interface ClassConstructor {
     new (...args: any): any;
     prototype: any;
@@ -48,7 +55,7 @@ export function PostConstruct() {
     return __decorateProperty(POST_CONSTRUCT_KEY, undefined);
 }
 
-export function DecoratedClass(ctor: ClassConstructor) {
+export function DecoratedClass(ctor: ClassConstructor | AngularComponentCtor): any {
     return __decorateClass(ctor, WITH_SERVICES)
 }
 
