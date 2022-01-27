@@ -247,6 +247,60 @@ export class ChildComponent extends ParentComponent {
 Problem solved. No danger of overwritting the parent class method and breaking
 the expected behaviour. 
 
+### Bonus: watching for input changes
+
+How many times did you write or encounter this in your angular applications?
+
+```typescript
+@Component({...})
+export class MyComponent implements OnChange {
+    ngOnChange(changes: SimpleChanges) {
+        if (changes['input1']) {
+            // do stuff related with input1
+        }
+
+        if (changes['input2']) {
+            // do stuff related with input2
+        }
+    }
+}
+```
+
+This looks ugly, right? 
+
+Check out a better way of doing it via `NgCabled`, using the `Watcher`
+annotation:
+
+```typescript
+@Component({...})
+@DecoratedClass
+export class MyComponent extends BaseComponent {
+    @Watcher('input1')
+    private _input1Changed(c: SimpleChanges) {
+        // do stuff related to input1 changing.
+    }
+
+    @Watcher('input2')
+    private _input2Changed(c: SimpleChanges) {
+        // do stuff related to input2 changing.
+    }
+}
+```
+
+Much, much nicer, right? You can also watch for more than one input changing,
+like this:
+
+```typescript
+@Component({...})
+@DecoratedClass
+export class MyComponent extends BaseComponent {
+    @Watcher('input1')
+    @Watcher('input2')
+    private _input1or2Changed(c: SimpleChanges) {
+        // do stuff related with input1 or input2 changing.
+    }
+}
+```
 
 ### Bonus: handling of observables
 
