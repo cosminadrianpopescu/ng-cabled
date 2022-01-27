@@ -7,7 +7,7 @@ practical and easy.
 
 ## Install
 
-```
+```bash
 npm install --save ng-cabled
 ```
 
@@ -51,7 +51,7 @@ when it comes to modern developing tools, you are left on your own. There is
 no IDE nor LSP server for angular which will properly interpret something like
 this:
 
-```
+```javascript
 const A = {
     method1(): void{
         ...
@@ -106,7 +106,7 @@ that should be automatically injected.
 
 ***Normal Angular way***
 
-```
+```typescript
 export class ParentComponent {
     constructor(private _parentPrivateService: ParentComponentService) {}
 }
@@ -123,7 +123,7 @@ export class ChildComponent extends ParentComponent {
 
 ***ng-cabled way***
 
-```
+```typescript
 @DecoratedClass
 export class ParentComponent {
     @Cabled(ParentComponentService) private _myPrivateService: ParentComponentService;
@@ -157,7 +157,7 @@ to let any injected service get instantiated). If you need to run some
 initializing code for a given service, just move that code in a private method
 annotated with the `PostConstruct` annotation like this:
 
-```
+```typescript
 @Injectable()
 @DecoratedClass
 export class MyBaseService {
@@ -180,7 +180,7 @@ This annotation will solve the second problem of extending components: when
 using any of the lifecycle hooks, they can be later overriden in a child
 component. 
 
-```
+```typescript
 export class ParentComponent implements OnInit {
     @Input() public id: string;
     ngOnInit() {
@@ -221,7 +221,7 @@ use the `NgCycle` annotation with any of the arguments: `'init'`,
 of the respective cycle. The example from above can be rewritten safely and
 more elegant like this:
 
-```
+```typescript
 @DecoratedClass
 export class ParentComponent extends BaseComponent {
     @Input() public id: string;
@@ -311,7 +311,7 @@ unsubscribing from them.
 
 ***Angular way of handling subscriptions***
 
-```
+```typescript
 @Component({
     ...
 })
@@ -344,7 +344,7 @@ Now, compare this ugly thing with the following beauty:
 
 ***Ng-cabled way***
 
-```
+```typescript
 @Component({
     ...
 })
@@ -374,7 +374,7 @@ Also, you can have a third parameter to the `BaseComponent::connect` function,
 in case you want to group the subscriptions to manually unsubscribe from them
 at a certain point, like this:
 
-```
+```typescript
 const SUBSCRIPTION_TYPE = 'my-separate-subscription';
 
 @Component({
@@ -420,7 +420,7 @@ pass the `Injector` to a parent module. So, in order for these annotations to
 function, all your modules need to extend `BaseModule` and pass the `Injector`
 like this:
 
-```
+```typescript
 @NgModule({
     ...
 })
@@ -446,7 +446,7 @@ In my oppinion, using `it`, `xit` and `fit` together with `describe` and
 `configureTestingModule` is a lot of boilerplate code. So, I prefer to do my
 test cases like this:
 
-```
+```typescript
 @NgTestUnit({
     // list of providers
     ...
