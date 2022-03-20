@@ -207,7 +207,7 @@ export function __modifyClass(ctor: ClassConstructor, decoration: string, args?:
             const proto = Object.getPrototypeOf(this);
             if (!!cables) {
                 const props = cables.get(proto) || {};
-                Object.keys(props).forEach(k => this[k] = props[k]);
+                Object.keys(props).forEach(k => Object.defineProperty(this, k, {configurable: true, writable: true, value: props[k]}));
             }
 
             const pc = __getDecorations(proto, POST_CONSTRUCT_KEY);
