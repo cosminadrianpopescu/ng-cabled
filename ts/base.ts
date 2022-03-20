@@ -1,6 +1,6 @@
-import {Injector, SimpleChanges} from "@angular/core";
-import {Observable, Subscription} from "rxjs";
-import {CycleType, DecoratedClass, DecoratorMetadata, getCycles, getWatchers, processAllInjectors, processPostConstruct} from ".";
+import { Injector, SimpleChanges } from "@angular/core";
+import { Observable, Subscription } from "rxjs";
+import { CycleType, DecoratedClass, DecoratorMetadata, getCycles, getWatchers, processModifiedClasses } from "./decorators";
 
 const DEFAULT_SUBSCRIPTION_TYPE = '__defaultsubscriptiontype__';
 
@@ -98,7 +98,9 @@ export class BaseModule {
             throw 'INJECTOR_NOT_PASSED';
         }
 
-        processAllInjectors(_inj);
-        processPostConstruct(_inj);
+        processModifiedClasses(_inj);
+
+        // processAllInjectors(_inj);
+        // processPostConstruct(_inj);
     }
 }

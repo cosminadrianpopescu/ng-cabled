@@ -4,9 +4,10 @@ import * as fs from 'fs';
 import {getTestBed} from '@angular/core/testing';
 import { BrowserDynamicTestingModule, platformBrowserDynamicTesting } from '@angular/platform-browser-dynamic/testing';
 import * as jasmine from 'jasmine/lib/jasmine.js';
-import {getTestcases, getTestunits, processInjectors} from '.';
+import {getTestcases, getTestunits, processInjectors, processModifiedClasses} from './decorators';
 import {Provider} from '@angular/core';
 import {ClassConstructor, processPostConstruct} from './decorators';
+import { BaseModule } from './base';
 // var jasmine = global['jasmine'];
 var j = new jasmine.default({});
 getTestBed().initTestEnvironment(BrowserDynamicTestingModule, platformBrowserDynamicTesting());
@@ -50,17 +51,15 @@ const loadFolder = async function(path: string) {
                 getTestBed().configureTestingModule({
                     providers: unit.prototype.providers || [],
                 });
-                processInjectors(unit, getTestBed());
-                (unit.prototype.providers || []).filter((p: Provider) => typeof(p) == 'function').forEach((p: ClassConstructor) => processInjectors(p, getTestBed()));
-                processPostConstruct(getTestBed());
+                new BaseModule(getTestBed());
             });
 
             tests.forEach(t => {
                 const tc = t.arg as any;
                 const callback = tc.x ? xit : tc.f ? fit : it;
                 callback(`Running test case ${tc.name || t.prop}`, () => {
-                    const instance = Object.create(unit.prototype);
-                    // const instance = new unit();
+                    // const instance = Object.create(unit.prototype);
+                    const instance = new unit();
                     return instance[t.prop].bind(instance)();
                 });
             });
