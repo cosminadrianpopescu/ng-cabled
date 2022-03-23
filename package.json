@@ -1,6 +1,6 @@
 {
     "name": "ng-cabled",
-    "version": "1.0.17",
+    "version": "1.0.18",
     "description": "Library for ease of creating extensible angular components",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",

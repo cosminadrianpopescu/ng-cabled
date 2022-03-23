@@ -14,6 +14,7 @@ const PCPROCESSED = '__pcprocessed__';
 const CYCLES_KEY = '__cycles__';
 const POST_CONSTRUCT_KEY = '__post-construct__';
 const TESTS_KEY = '__testsunits__';
+const INJECTOR = '__injector__'
 const WITH_SERVICES = '__service__';
 const WATCHERS_KEY = '__watcherskey__';
 const CABLES = '__cables__';
@@ -103,30 +104,35 @@ export function getTestcases<T extends DecoratorParameterType>(instance: Functio
 }
 
 export function processModifiedClasses(inj: Injector) {
-    const classes = __getDecoratedClasses(WITH_SERVICES).concat(__getDecoratedClasses(TEST_UNITS));
+    const classes = __getDecoratedClasses(WITH_SERVICES);
     classes
         .map(c => ({c: c.ctor, props: Object.getOwnPropertyNames(c.ctor)}))
-        .filter(c => c.props.indexOf(SERVICE_INSTANTIATED) == -1)
+        // .filter(c => c.props.indexOf(SERVICE_INSTANTIATED) == -1)
         .map(c => c.c)
-        .forEach(c => {
-            let cables: ClassesCables = Reflect.getOwnMetadata(CABLES, Object);
-            if (!cables) {
-                cables = new Map();
-            }
-            let x = cables.get(c.prototype);
-            if (!x) {
-                x = {};
-            }
-            const injectors = getInjectors(c);
-            injectors.forEach(i => {
-                const a = i.arg as NgServiceArguments;
-                // ctor.prototype[i.prop] = inj.get(a.type as Type<any>, typeof(a.def) == 'undefined' ? undefined : a.def, InjectFlags.Default);
-                x[i.prop] = inj.get(a.type as Type<any>, typeof(a.def) == 'undefined' ? undefined : a.def, InjectFlags.Default);
-            });
-            cables.set(c.prototype, x);
-            Object.defineProperty(c, SERVICE_INSTANTIATED, {});
-            Reflect.defineMetadata(CABLES, cables, Object);
-        });
+        // .forEach(c => c[INJECTOR] = inj);
+        .forEach(c => processInjectorsOfModifiedClass(c, inj));
+}
+
+export function processInjectorsOfModifiedClass(ctor: ClassConstructor, inj: Injector) {
+    // let cables: ClassesCables = Reflect.getOwnMetadata(CABLES, Object);
+    // if (!cables) {
+    //     cables = new Map();
+    // }
+    // let x = cables.get(ctor.prototype);
+    // if (!x) {
+    //     x = {};
+    // }
+    // const injectors = getInjectors(ctor);
+    // injectors.forEach(i => {
+    //     const a = i.arg as NgServiceArguments;
+    //     // ctor.prototype[i.prop] = inj.get(a.type as Type<any>, typeof(a.def) == 'undefined' ? undefined : a.def, InjectFlags.Default);
+    //     x[i.prop] = inj.get(a.type as Type<any>, typeof(a.def) == 'undefined' ? undefined : a.def, InjectFlags.Default);
+    // });
+    // cables.set(ctor.prototype, x);
+    // Object.defineProperty(ctor, SERVICE_INSTANTIATED, {});
+    // Reflect.defineMetadata(CABLES, cables, Object);
+
+    ctor[INJECTOR] = inj;
 }
 
 export function processAllInjectors(inj: Injector) {
@@ -140,14 +146,6 @@ export function processAllInjectors(inj: Injector) {
 
             Object.defineProperty(c, SERVICE_INSTANTIATED, {});
         });
-}
-
-export function processInstanceInjectors(instance: Function, inj: Injector) {
-    const injectors = getInjectors(instance.prototype);
-    injectors.forEach(i => {
-        const a = i.arg as NgServiceArguments;
-        instance[i.prop] = inj.get(a.type as Type<any>, typeof(a.def) == 'undefined' ? undefined : a.def, InjectFlags.Default);
-    });
 }
 
 export function processInjectors(ctor: ClassConstructor, inj: Injector) {
@@ -203,12 +201,22 @@ export function __modifyClass(ctor: ClassConstructor, decoration: string, args?:
     const result = class extends ctor {
         constructor(...args: Array<any>) {
             super(...args);
-            const cables: ClassesCables = Reflect.getOwnMetadata(CABLES, Object);
+            // const cables: ClassesCables = Reflect.getOwnMetadata(CABLES, Object);
             const proto = Object.getPrototypeOf(this);
-            if (!!cables) {
-                const props = cables.get(proto) || {};
-                Object.keys(props).forEach(k => Object.defineProperty(this, k, {configurable: true, writable: true, value: props[k]}));
-            }
+            const injectors = getInjectors(this.constructor as any);
+            const inj = this.constructor[INJECTOR];
+            injectors.forEach(i => {
+                const a = i.arg as NgServiceArguments;
+                // ctor.prototype[i.prop] = inj.get(a.type as Type<any>, typeof(a.def) == 'undefined' ? undefined : a.def, InjectFlags.Default);
+                Object.defineProperty(this, i.prop, {
+                    enumerable: true, configurable: true, writable: true,
+                    value: inj.get(a.type as Type<any>, typeof(a.def) == 'undefined' ? undefined : a.def, InjectFlags.Default),
+                });
+            });
+            // if (!!cables) {
+            //     const props = cables.get(proto) || {};
+            //     Object.keys(props).forEach(k => Object.defineProperty(this, k, {configurable: true, writable: true, value: props[k]}));
+            // }
 
             const pc = __getDecorations(proto, POST_CONSTRUCT_KEY);
             pc.forEach(p => this[p.prop]());

@@ -4,7 +4,7 @@ import * as fs from 'fs';
 import {getTestBed} from '@angular/core/testing';
 import { BrowserDynamicTestingModule, platformBrowserDynamicTesting } from '@angular/platform-browser-dynamic/testing';
 import * as jasmine from 'jasmine/lib/jasmine.js';
-import {getTestcases, getTestunits, processInjectors, processModifiedClasses} from './decorators';
+import {getTestcases, getTestunits, processInjectors, processInjectorsOfModifiedClass, processModifiedClasses} from './decorators';
 import {Provider} from '@angular/core';
 import {ClassConstructor, processPostConstruct} from './decorators';
 import { BaseModule } from './base';
@@ -21,6 +21,44 @@ global['document'] = <any>process;
 global['document']['addEventListener'] = () => {};
 (<any>global['document']['querySelectorAll']) = () => [];
 (<any>global['document'])['documentElement'] = {style: []};
+
+const tb = getTestBed();
+
+const _config = tb.configureTestingModule;
+tb.configureTestingModule = (...args: Array<any>) => {
+    _config.apply(getTestBed(), args);
+    // processModifiedClasses(getTestBed());
+    args
+        .filter(a => !!a.providers)
+        .map(a => a.providers || [])
+        .reduce((acc, v) => acc.concat(v), [])
+        .filter((p: Provider) => typeof(p) == 'function')
+        .forEach((c: ClassConstructor) => processInjectorsOfModifiedClass(c, getTestBed()));
+}
+
+// declare var describe: (desc: string, specs: any) => void;
+// declare var beforeEach: (inits: any) => void;
+// 
+// const __describe__ = describe;
+// const __beforeEach__ = beforeEach;
+// 
+// beforeEach = function(inits: any) {
+//     return __beforeEach__(() => {
+//         if ()
+//         inits();
+//         new BaseModule(getTestBed());
+//     });
+// }
+// 
+// describe = function(description, specs) {
+//     return __describe__(description, () => {
+//         beforeEach(() => {
+//             console.log('i am before each');
+//         });
+// 
+//         specs();
+//     });
+// }
 
 const loadFolder = async function(path: string) {
     let promises = [];
@@ -44,14 +82,14 @@ const loadFolder = async function(path: string) {
     const units = getTestunits();
 
     units.forEach(unit => {
-        describe(`Running ${unit.constructor.name}`, () => {
+        describe(`Running ${unit.name}`, () => {
             afterAll(() => getTestBed().resetTestingModule());
             const tests = getTestcases(unit);
             beforeAll(() => {
                 getTestBed().configureTestingModule({
                     providers: unit.prototype.providers || [],
                 });
-                new BaseModule(getTestBed());
+                processInjectorsOfModifiedClass(unit, getTestBed());
             });
 
             tests.forEach(t => {
