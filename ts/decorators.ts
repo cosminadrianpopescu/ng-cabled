@@ -103,14 +103,31 @@ export function getTestcases<T extends DecoratorParameterType>(instance: Functio
     return __getDecorations(instance.prototype, TESTS_KEY);
 }
 
-export function processModifiedClasses(inj: Injector) {
-    const classes = __getDecoratedClasses(WITH_SERVICES);
+export function processModifiedClasses(inj: Injector, ctors?: Array<ClassConstructor>) {
+    const classes: Array<DecoratedClass> = ctors ? ctors.map(c => ({ctor: c, args: null})) : __getDecoratedClasses(WITH_SERVICES);
     classes
         .map(c => ({c: c.ctor, props: Object.getOwnPropertyNames(c.ctor)}))
         // .filter(c => c.props.indexOf(SERVICE_INSTANTIATED) == -1)
         .map(c => c.c)
         // .forEach(c => c[INJECTOR] = inj);
         .forEach(c => processInjectorsOfModifiedClass(c, inj));
+
+    const instances = [];
+
+    classes.forEach(c => {
+        const injectors = getInjectors(c.ctor);
+        injectors.forEach(i => {
+            const a = i.arg as NgServiceArguments;
+            const instance = inj.get(a.type as Type<any>, typeof(a.def) == 'undefined' ? undefined : a.def, InjectFlags.Default);
+            if (!instance) {
+                return ;
+            }
+
+            instances.push(instance);
+        });
+    });
+
+    instances.forEach(i => processModifiedClassPostConstruct(i));
 }
 
 export function processInjectorsOfModifiedClass(ctor: ClassConstructor, inj: Injector) {
@@ -131,7 +148,6 @@ export function processInjectorsOfModifiedClass(ctor: ClassConstructor, inj: Inj
     // cables.set(ctor.prototype, x);
     // Object.defineProperty(ctor, SERVICE_INSTANTIATED, {});
     // Reflect.defineMetadata(CABLES, cables, Object);
-
     ctor[INJECTOR] = inj;
 }
 
@@ -217,9 +233,6 @@ export function __modifyClass(ctor: ClassConstructor, decoration: string, args?:
             //     const props = cables.get(proto) || {};
             //     Object.keys(props).forEach(k => Object.defineProperty(this, k, {configurable: true, writable: true, value: props[k]}));
             // }
-
-            const pc = __getDecorations(proto, POST_CONSTRUCT_KEY);
-            pc.forEach(p => this[p.prop]());
         }
     }
 
@@ -228,6 +241,15 @@ export function __modifyClass(ctor: ClassConstructor, decoration: string, args?:
         .filter(k => ['length', 'prototype', 'name'].indexOf(k) == -1)
         .forEach(k => Object.defineProperty(result, k, { value: ctor[k], writable: true, }));
     return result;
+}
+
+export function processModifiedClassPostConstruct(instance: any) {
+    if (instance[PCPROCESSED]) {
+        return ;
+    }
+    const pc = __getDecorations(Object.getPrototypeOf(instance), POST_CONSTRUCT_KEY);
+    pc.forEach(p => instance[p.prop].bind(instance)());
+    instance[PCPROCESSED] = true;
 }
 
 export function __decorateClass(ctor: ClassConstructor, decoration: string, args?: any) {
