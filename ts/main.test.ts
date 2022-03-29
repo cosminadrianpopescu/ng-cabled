@@ -4,9 +4,10 @@ import * as fs from 'fs';
 import {getTestBed} from '@angular/core/testing';
 import { BrowserDynamicTestingModule, platformBrowserDynamicTesting } from '@angular/platform-browser-dynamic/testing';
 import * as jasmine from 'jasmine/lib/jasmine.js';
-import {getTestcases, getTestunits, processInjectors} from '.';
+import {getTestcases, getTestunits, processInjectors} from './decorators';
 import {Provider} from '@angular/core';
 import {ClassConstructor, processPostConstruct} from './decorators';
+import { BaseModule } from './base';
 // var jasmine = global['jasmine'];
 var j = new jasmine.default({});
 getTestBed().initTestEnvironment(BrowserDynamicTestingModule, platformBrowserDynamicTesting());
@@ -20,6 +21,38 @@ global['document'] = <any>process;
 global['document']['addEventListener'] = () => {};
 (<any>global['document']['querySelectorAll']) = () => [];
 (<any>global['document'])['documentElement'] = {style: []};
+
+const tb = getTestBed();
+
+const _config = tb.configureTestingModule;
+tb.configureTestingModule = (...args: Array<any>) => {
+    _config.apply(getTestBed(), args);
+    new BaseModule(getTestBed(), args.map(a => a.providers).reduce((acc, v) => acc.concat(v), []));
+}
+
+// declare var describe: (desc: string, specs: any) => void;
+// declare var beforeEach: (inits: any) => void;
+// 
+// const __describe__ = describe;
+// const __beforeEach__ = beforeEach;
+// 
+// beforeEach = function(inits: any) {
+//     return __beforeEach__(() => {
+//         if ()
+//         inits();
+//         new BaseModule(getTestBed());
+//     });
+// }
+// 
+// describe = function(description, specs) {
+//     return __describe__(description, () => {
+//         beforeEach(() => {
+//             console.log('i am before each');
+//         });
+// 
+//         specs();
+//     });
+// }
 
 const loadFolder = async function(path: string) {
     let promises = [];
@@ -43,24 +76,21 @@ const loadFolder = async function(path: string) {
     const units = getTestunits();
 
     units.forEach(unit => {
-        describe(`Running ${unit.constructor.name}`, () => {
+        describe(`Running ${unit.name}`, () => {
             afterAll(() => getTestBed().resetTestingModule());
             const tests = getTestcases(unit);
             beforeAll(() => {
                 getTestBed().configureTestingModule({
-                    providers: unit.prototype.providers || [],
+                    providers: (unit.prototype.providers || []).concat([unit]),
                 });
-                processInjectors(unit, getTestBed());
-                (unit.prototype.providers || []).filter((p: Provider) => typeof(p) == 'function').forEach((p: ClassConstructor) => processInjectors(p, getTestBed()));
-                processPostConstruct(getTestBed());
             });
 
             tests.forEach(t => {
                 const tc = t.arg as any;
                 const callback = tc.x ? xit : tc.f ? fit : it;
                 callback(`Running test case ${tc.name || t.prop}`, () => {
-                    const instance = Object.create(unit.prototype);
-                    // const instance = new unit();
+                    // const instance = Object.create(unit.prototype);
+                    const instance = getTestBed().get(unit);
                     return instance[t.prop].bind(instance)();
                 });
             });
@@ -69,3 +99,4 @@ const loadFolder = async function(path: string) {
 
     j.execute();
 })();
+

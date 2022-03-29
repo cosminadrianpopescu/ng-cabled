@@ -11,6 +11,8 @@ const CABLED_KEY = '__cabled__';
 const TEST_UNITS = '__testunits__';
 const SERVICE_INSTANTIATED = '__serviceinstantiated__';
 const PCPROCESSED = '__pcprocessed__';
+const INJPROCESSED = '__injprocessed__';
+const INJECTOR = '__injector__';
 const CYCLES_KEY = '__cycles__';
 const POST_CONSTRUCT_KEY = '__post-construct__';
 const TESTS_KEY = '__testsunits__';
@@ -103,16 +105,57 @@ export function getTestcases<T extends DecoratorParameterType>(instance: Functio
     return __getDecorations(instance.prototype, TESTS_KEY);
 }
 
-export function processAllInjectors(inj: Injector) {
-    const classes = __getDecoratedClasses(WITH_SERVICES);
-    classes
-        .map(c => ({c: c.ctor, props: Object.getOwnPropertyNames(c.ctor)}))
-        .filter(c => c.props.indexOf(SERVICE_INSTANTIATED) == -1)
-        .map(c => c.c)
-        .forEach(c => {
-            processInjectors(c, inj);
-            Object.defineProperty(c, SERVICE_INSTANTIATED, {});
+export function processAllInjectors(inj: Injector, providers: Array<Provider>) {
+    const classes = __getDecoratedClasses(WITH_SERVICES).concat(__getDecoratedClasses(TEST_UNITS));
+    classes.forEach(c => Object.defineProperty(c.ctor, INJECTOR, {configurable: true, value: inj}));
+    const instances = [];
+    const ctors = classes.map(c => c.ctor);
+    providers
+        .map(p => typeof(p) == 'function' ? p : p['useClass'] ? p['provide'] : null)
+        .filter(p => !!p)
+        .forEach(p => {
+            const i = inj.get(p, null, InjectFlags.Default);
+            if (!i) {
+                return ;
+            }
+            processInstanceInjectors(i);
+            instances.push(i);
         });
+
+    instances.forEach(i => {
+        if (i[PCPROCESSED]) {
+            return ;
+        }
+        const pc = __getDecorations(Object.getPrototypeOf(i), POST_CONSTRUCT_KEY);
+        pc.forEach(p => i[p.prop].bind(i)());
+        i[PCPROCESSED] = true;
+    });
+    // classes
+    //     .map(c => ({c: c.ctor, props: Object.getOwnPropertyNames(c.ctor)}))
+    //     .filter(c => c.props.indexOf(SERVICE_INSTANTIATED) == -1)
+    //     .map(c => c.c)
+    //     .forEach(c => {
+    //         processInjectors(c, inj);
+    //         Object.defineProperty(c, SERVICE_INSTANTIATED, {});
+    //     });
+}
+
+export function processInstanceInjectors(instance: Function) {
+    if (instance[INJPROCESSED]) {
+        return ;
+    }
+    const ctor: ClassConstructor = instance.constructor as any;
+    const injectors = getInjectors(ctor);
+    const inj = ctor[INJECTOR];
+    injectors.forEach(i => {
+        const a = i.arg as NgServiceArguments;
+        Object.defineProperty(instance, i.prop, {
+            enumerable: true, configurable: true, writable: true,
+            value: inj.get(a.type as Type<any>, typeof(a.def) == 'undefined' ? undefined : a.def, InjectFlags.Default),
+        });
+    });
+
+    instance[INJPROCESSED] = true;
 }
 
 export function processInjectors(ctor: ClassConstructor, inj: Injector) {
@@ -127,8 +170,8 @@ export function processInjectors(ctor: ClassConstructor, inj: Injector) {
     });
 }
 
-export function processPostConstruct(inj: Injector) {
-    const classes = __getDecoratedClasses(WITH_SERVICES);
+export function processPostConstruct(inj: Injector, ctors?: Array<ClassConstructor>) {
+    const classes: Array<DecoratedClass> = ctors ? ctors.map(c => ({ctor: c, args: null})) : __getDecoratedClasses(WITH_SERVICES);
     classes
         .filter(c => !c.ctor[PCPROCESSED])
         .map(c => ({c: c.ctor, pc: __getDecorations(c.ctor.prototype, POST_CONSTRUCT_KEY)}))
@@ -177,7 +220,22 @@ export function __decorateClass(ctor: ClassConstructor, decoration: string, args
 
     classes.get(decoration).push({ctor: ctor, args: args});
     Reflect.defineMetadata(DECORATED_CLASSES, classes, Object);
-    return ctor;
+    return __modifyClass(ctor, decoration, args);
+}
+
+export function __modifyClass(ctor: ClassConstructor, decoration: string, args?: any): any {
+    const result = class extends ctor {
+        constructor(...args: Array<any>) {
+            super(...args);
+            processInstanceInjectors(this as any);
+        }
+    }
+
+    Object.defineProperty(result, 'name', { value: ctor.name, writable: false });
+    Object.getOwnPropertyNames(ctor)
+        .filter(k => ['length', 'prototype', 'name'].indexOf(k) == -1)
+        .forEach(k => Object.defineProperty(result, k, { value: ctor[k], writable: true, }));
+    return result;
 }
 
 export function __getDecorations<T extends DecoratorParameterType>(ctor: ClassConstructor, key: string): Array<DecoratorMetadata<T>> {

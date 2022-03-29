@@ -1,4 +1,4 @@
-import {Injector, SimpleChanges} from "@angular/core";
+import {Injector, Provider, SimpleChanges} from "@angular/core";
 import {Observable, Subscription} from "rxjs";
 import {CycleType, DecoratedClass, DecoratorMetadata, getCycles, getWatchers, processAllInjectors, processPostConstruct} from ".";
 
@@ -92,13 +92,13 @@ export class BaseComponent {
 }
 
 export class BaseModule {
-    constructor(_inj: Injector) {
+    constructor(_inj: Injector, providers?: Array<Provider>) {
         if (!_inj) {
             console.error('You are extending BaseModule without providing the injector.');
             throw 'INJECTOR_NOT_PASSED';
         }
 
-        processAllInjectors(_inj);
-        processPostConstruct(_inj);
+        processAllInjectors(_inj, providers || this.constructor['ɵinj']);
+        // processPostConstruct(_inj);
     }
 }
