@@ -9,15 +9,14 @@ const DECORATORS = '__decorators__';
 
 const CABLED_KEY = '__cabled__';
 const TEST_UNITS = '__testunits__';
-const SERVICE_INSTANTIATED = '__serviceinstantiated__';
-const PCPROCESSED = '__pcprocessed__';
-const INJPROCESSED = '__injprocessed__';
+const CLASS_INSTANTIATED = '__classinstantiated__';
 const INJECTOR = '__injector__';
 const CYCLES_KEY = '__cycles__';
 const POST_CONSTRUCT_KEY = '__post-construct__';
 const TESTS_KEY = '__testsunits__';
 const WITH_SERVICES = '__service__';
 const WATCHERS_KEY = '__watcherskey__';
+const PROXY = '__proxy__';
 
 export const TEST_CASES: Map<Function, Array<TestCase>> = new Map<Function, Array<TestCase>>();
 export const TEST_CASES_ONLY: Map<Function, Array<TestCase>> = new Map<Function, Array<TestCase>>();
@@ -92,10 +91,6 @@ export function getWatchers<T extends DecoratorParameterType>(instance: Function
     return __getDecorations(instance.prototype, WATCHERS_KEY);
 }
 
-export function getPostconstruct<T extends DecoratorParameterType>(instance: Function): Array<DecoratorMetadata<T>> {
-    return __getDecorations(instance.prototype, POST_CONSTRUCT_KEY);
-}
-
 export function getTestunits(): Array<{new(...args: any): any; prototype: any;}> {
     const classes = __getDecoratedClasses(TEST_UNITS);
     return classes.map(c => c.ctor);
@@ -105,11 +100,9 @@ export function getTestcases<T extends DecoratorParameterType>(instance: Functio
     return __getDecorations(instance.prototype, TESTS_KEY);
 }
 
-export function processAllInjectors(inj: Injector, providers: Array<Provider>) {
+export function instantiateClasses(inj: Injector, providers: Array<Provider>) {
     const classes = __getDecoratedClasses(WITH_SERVICES).concat(__getDecoratedClasses(TEST_UNITS));
     classes.forEach(c => Object.defineProperty(c.ctor, INJECTOR, {configurable: true, value: inj}));
-    const instances = [];
-    const ctors = classes.map(c => c.ctor);
     providers
         .map(p => typeof(p) == 'function' ? p : p['useClass'] ? p['provide'] : null)
         .filter(p => !!p)
@@ -118,70 +111,38 @@ export function processAllInjectors(inj: Injector, providers: Array<Provider>) {
             if (!i) {
                 return ;
             }
-            processInstanceInjectors(i);
-            instances.push(i);
+            processDependencies(i);
         });
-
-    instances.forEach(i => {
-        if (i[PCPROCESSED]) {
-            return ;
-        }
-        const pc = __getDecorations(Object.getPrototypeOf(i), POST_CONSTRUCT_KEY);
-        pc.forEach(p => i[p.prop].bind(i)());
-        i[PCPROCESSED] = true;
-    });
-    // classes
-    //     .map(c => ({c: c.ctor, props: Object.getOwnPropertyNames(c.ctor)}))
-    //     .filter(c => c.props.indexOf(SERVICE_INSTANTIATED) == -1)
-    //     .map(c => c.c)
-    //     .forEach(c => {
-    //         processInjectors(c, inj);
-    //         Object.defineProperty(c, SERVICE_INSTANTIATED, {});
-    //     });
 }
 
-export function processInstanceInjectors(instance: Function) {
-    if (instance[INJPROCESSED]) {
+export function processDependencies(instance: Function, isProxy: boolean = false): Array<string> {
+    if (instance[CLASS_INSTANTIATED]) {
         return ;
     }
+    if (isProxy) {
+        Object.defineProperty(instance, PROXY, {configurable: true, enumerable: true, value: {}});
+    }
     const ctor: ClassConstructor = instance.constructor as any;
-    const injectors = getInjectors(ctor);
+    const deps = getInjectors(ctor);
     const inj = ctor[INJECTOR];
-    injectors.forEach(i => {
-        const a = i.arg as NgServiceArguments;
-        Object.defineProperty(instance, i.prop, {
+    deps.forEach(d => {
+        const a = d.arg as NgServiceArguments;
+        const i = inj.get(a.type as Type<any>, typeof(a.def) == 'undefined' ? undefined : a.def, InjectFlags.Default);
+        if (i) {
+            processDependencies(i);
+        }
+        Object.defineProperty(isProxy ? instance[PROXY] : instance, d.prop, {
             enumerable: true, configurable: true, writable: true,
-            value: inj.get(a.type as Type<any>, typeof(a.def) == 'undefined' ? undefined : a.def, InjectFlags.Default),
+            value: i,
         });
     });
 
-    instance[INJPROCESSED] = true;
-}
+    const pc = __getDecorations(instance as any, POST_CONSTRUCT_KEY);
+    pc.forEach(p => instance[p.prop].bind(instance)());
 
-export function processInjectors(ctor: ClassConstructor, inj: Injector) {
-    const injectors = getInjectors(ctor);
-    injectors.forEach(i => {
-        const a = i.arg as NgServiceArguments;
-        // ctor.prototype[i.prop] = inj.get(a.type as Type<any>, typeof(a.def) == 'undefined' ? undefined : a.def, InjectFlags.Default);
-        Object.defineProperty(ctor.prototype, i.prop, {
-            enumerable: true, configurable: true, writable: true,
-            value: inj.get(a.type as Type<any>, typeof(a.def) == 'undefined' ? undefined : a.def, InjectFlags.Default),
-        });
-    });
-}
+    instance[CLASS_INSTANTIATED] = true;
 
-export function processPostConstruct(inj: Injector, ctors?: Array<ClassConstructor>) {
-    const classes: Array<DecoratedClass> = ctors ? ctors.map(c => ({ctor: c, args: null})) : __getDecoratedClasses(WITH_SERVICES);
-    classes
-        .filter(c => !c.ctor[PCPROCESSED])
-        .map(c => ({c: c.ctor, pc: __getDecorations(c.ctor.prototype, POST_CONSTRUCT_KEY)}))
-        .filter(c => c.pc.length > 0)
-        .map(c => ({i: inj.get(c.c, null, InjectFlags.Default), pc: c.pc, ctor: c.c}))
-        .filter(i => !!i.i)
-        .forEach(i => {
-            i.pc.forEach(m => i.i[m.prop]());
-            i.ctor[PCPROCESSED] = true;
-        });
+    return deps.map(d => d.prop);
 }
 
 export function __decorateProperty<T extends DecoratorParameterType>(decorationName: string, arg: T): any {
@@ -220,14 +181,14 @@ export function __decorateClass(ctor: ClassConstructor, decoration: string, args
 
     classes.get(decoration).push({ctor: ctor, args: args});
     Reflect.defineMetadata(DECORATED_CLASSES, classes, Object);
-    return __modifyClass(ctor, decoration, args);
+    return __modifyClass(ctor);
 }
 
-export function __modifyClass(ctor: ClassConstructor, decoration: string, args?: any): any {
+export function __modifyClass(ctor: ClassConstructor): any {
     const result = class extends ctor {
         constructor(...args: Array<any>) {
             super(...args);
-            processInstanceInjectors(this as any);
+            processDependencies(this as any);
         }
     }
 
@@ -263,3 +224,22 @@ export function __getDecoratedClasses(key: string): Array<DecoratedClass> {
 
     return classes.get(key) || [];
 }
+
+@DecoratedClass
+export class CabledClass {
+    private __dependencies__: Array<string> = [];
+    constructor() {
+        this.__dependencies__ = processDependencies(this as any, true);
+        const handle = function(target: any, prop: string, receiver: any) {
+            if (this.__dependencies__.indexOf(prop) == -1) {
+                return Reflect.get(target, prop, receiver);
+            }
+            return this[PROXY][prop];
+        }
+        const handler = {
+            get: handle.bind(this),
+        }
+        return new Proxy(this, handler);
+    }
+}
+
