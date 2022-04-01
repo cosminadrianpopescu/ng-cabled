@@ -1,6 +1,7 @@
 // import './testing/babel-support';
 // import 'ng-cabled/main.test';
 import * as path from 'path';
+import * as fs from 'fs';
 import { getTestBed, TestBed } from '@angular/core/testing';
 import { BrowserDynamicTestingModule, platformBrowserDynamicTesting } from '@angular/platform-browser-dynamic/testing';
 // import * as jasmine from 'jasmine/lib/jasmine.js';
@@ -31,10 +32,11 @@ tb.configureTestingModule = (...args: Array<any>) => {
 }
 
 // Hack for jasmine-core. 
-const oldJoin = path.join;
-(path as any).join = (folder: string, file: string) => {
+const oldJoin = path['default'].join;
+(path['default'] as any).join = (folder: string, file: string) => {
     if (file == 'jasmine-core') {
-        folder = './node_modules';
+        const files = fs.readdirSync('.');
+        folder = `${files.indexOf('node_modules') == -1 ? '..' : '.'}/node_modules`;
     }
     return oldJoin(folder, file);
 }

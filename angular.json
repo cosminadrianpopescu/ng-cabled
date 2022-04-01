@@ -56,7 +56,7 @@
                         "preserveSymlinks": true,
                         "sourceMap": true,
                         "namedChunks": true,
-                        "tsConfig": "./tsconfig.json"
+                        "tsConfig": "./tsconfig.test.json"
                     }
                 }
             }

@@ -6,8 +6,9 @@
     "composite": true,
     "types": "dist/index.d.ts",
     "scripts": {
-        "test": "tsc -p tsconfig.test.json && cd testing && ../tomjs && node --enable-source-maps=true --experimental-specifier-resolution=node ./main.test.mjs",
-        "build": "tsc --diagnostics",
+        "test2": "tsc -p tsconfig.test.json && cd test-build && ../tomjs && node --enable-source-maps=true --experimental-specifier-resolution=node ./main.test.mjs",
+        "test": "ng build js && node ./test-build/main.js",
+        "build": "ng build",
         "pre": "npm run build && cp package.json ./dist/package.json",
         "pack": "npm run pre && cd dist && npm pack",
         "publish": "npm run pre && cp README.md ./dist/README.md && cd dist && npm publish"
