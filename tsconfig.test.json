@@ -1,32 +1,8 @@
 {
+    "extends": "./tsconfig.json",
     "compilerOptions": {
-        "outDir": "./testing",
-        "types": [
-            "jasmine",
-            "node"
-        ],
-        "skipLibCheck": true,
-        "baseUrl": "./",
-        "sourceMap": true,
-        "declaration": false,
-        "module": "es2020",
-        "allowSyntheticDefaultImports": true,
-        "moduleResolution": "node",
-        "emitDecoratorMetadata": true,
-        "experimentalDecorators": true,
-        "importHelpers": true,
-        "target": "esnext",
-        "typeRoots": [
-            "node_modules/@types"
-        ],
-        "lib": [
-            "es2020",
-            "dom"
-        ]
-    },
-    "include": [
-        "src/**/*.spec.ts",
-        "src/**/*.d.ts",
-        "ts/**/*.ts"
-    ]
+        "outDir": "./test-build/",
+        "declaration": true,
+        "declarationMap": true
+    }
 }

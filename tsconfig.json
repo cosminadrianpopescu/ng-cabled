@@ -1,6 +1,7 @@
 {
     "compilerOptions": {
-        "target": "es2015",
+        "baseUrl": "./",
+        "target": "esnext",
         "skipLibCheck": true,
         "module": "esnext",
         "moduleResolution": "node",
@@ -10,6 +11,6 @@
         "declaration": true,
         "outDir": "./dist/"
     },
-    "include": ["ts/**/*.ts", "ts/main.test.ts"],
+    "include": ["ts/**/*.ts"],
     "exclude": ["ts/**/*.spec.ts"]
 }
