@@ -72,9 +72,9 @@ Following such a code, `c` will be of type `any`, because `Object.create`
 returns `any`. So, good luck finding definitions, references, and so on. Of
 course, a solution would be to have a lot of interfaces, but this is a poor
 solution compared with just extending the damn class. That is the
-straightforward solution. So, until the IDE's and the tools (and I think also
-the typescript language) will catch up with this, object composition is simply
-not a useful practical solution to the problems enumerated previously.
+straightforward solution. So, until the IDE's, the tools and the typescript
+language will catch up with this, object composition is simply not a useful
+practical solution to the problems enumerated previously.
 
 
 ***Challenges***
@@ -93,7 +93,8 @@ major issues:
 
 ## ng-cabled solution
 
-In order to solve this issues, this library provides a few decorators:
+In order to solve this issues, this library provides a few decorators and a
+few base classes.
 
 ### `DecoratedClass` and `Cabled` annotations
 
@@ -107,15 +108,15 @@ that should be automatically injected.
 ***Normal Angular way***
 
 ```typescript
-export class ParentComponent {
-    constructor(private _parentPrivateService: ParentComponentService) {}
+export class ParentService {
+    constructor(private _parentPrivateService: ParentPrivateService) {}
 }
 
 @Component({
     ...
 })
-export class ChildComponent extends ParentComponent {
-    constructor(_baseClassPrivateService: ParentComponentService, private _childPrivateService: ChildComponentService) {
+export class ChildService extends ParentService {
+    constructor(_baseClassPrivateService: ParentPrivateService, private _childPrivateService: ChildPrivateService) {
         super(_baseClassPrivateService);
     }
 }
@@ -125,22 +126,22 @@ export class ChildComponent extends ParentComponent {
 
 ```typescript
 @DecoratedClass
-export class ParentComponent {
-    @Cabled(ParentComponentService) private _myPrivateService: ParentComponentService;
+export class ParentService {
+    @Cabled(ParentPrivateService) private _myPrivateService: ParentPrivateService;
 }
 
 @Component({
     ...
 })
 @DecoratedClass
-export class ChildComponent extends ParentComponent {
-    @Cabled(ChildComponentService) private _childPrivateService: ChildComponentService;
+export class ChildService extends ParentService {
+    @Cabled(ChildPrivateService) private _childPrivateService: ChildPrivateService;
 }
 ```
 
-Notice how the `ChildComponent` now does not know and does not care about the
-internal private dependencies of `ParentComponent` (i.e. the private
-`ParentComponentService`).
+Notice how the `ChildService` now does not know and does not care about the
+internal private dependencies of `ParentService` (i.e. the private
+`ParentPrivateService`).
 
 The first argument of the `Cabled` annotation can be any Angular accepted
 dependency injection token (it can be a class, it can be an `InjectionToken`,
@@ -154,8 +155,8 @@ property is initialized with the given default value.
 The only issue this poses is that you have no way to know in which order the
 services will be instantiated. So, you can't use constructors for anything (so
 to let any injected service get instantiated). If you need to run some
-initializing code for a given service, just move that code in a private method
-annotated with the `PostConstruct` annotation like this:
+initialization code for a given service, just move that code in a private
+method annotated with the `PostConstruct` annotation like this:
 
 ```typescript
 @Injectable()
@@ -173,6 +174,66 @@ export class MyBaseService {
 The `PostConstruct` annotation will not work on components (is meant to be
 used only for services). For components see the next paragraph (basically you
 should use life cycle hooks).
+
+### `DecoratedClass` usage
+
+Decorating classes with `DecoratedClass` annotation will work without any
+issues on singleton services on the current version of Angular and on future
+versions. 
+
+Since the components, as you will see bellow, will all extend the
+`BaseComponent` class, they do not need the `DecoratedClass` annotation. For
+example:
+
+```typescript
+@Component({
+    ...
+})
+export class MyComponent extends BaseComponent {
+    @Cabled(MyService) private _service: MyService;
+}
+```
+
+The services will be injected properly after the `PostConstruct` is run.
+
+When it comes to pipes and multiple instance services (like services provided
+in components, although I would suggest to use pipes), for the moment you can
+use the `DecoratedClass` annotation. This will work for any Angular version
+from 9 to 13. 
+
+However, due to [this bug](https://github.com/angular/angular/issues/45477),
+the `DecoratedClass` annotation might stop working in the future for pipes and
+multiple instances services. In this case, if you want to be bullet proof, use
+the `CabledClass`. Instead of annotating the pipes with `DecoratedClass`, you
+can extend the `CabledClass` class. 
+
+***Bullet proof (will work in any angular version)***
+
+```typescript
+@Pipe(...)
+export class MyPipe extends CabledClass {
+    @Cabled(MyService) private _service: MyService;
+    public transform(...) {
+        ...
+    }
+}
+```
+
+***Angular 9 to 13 works for sure, not guaranteed to work in the future***
+
+```typescript
+@Pipe(...)
+@DecoratedClass
+export class MyPipe {
+    @Cabled(MyService) private _service: MyService;
+    public transform(...) {
+        ...
+    }
+}
+```
+
+When extending the `CabledClass`, you don't need to decorate the class with
+`DecoratedClass`.
 
 ### `NgCycle` annotation
 
@@ -222,7 +283,6 @@ of the respective cycle. The example from above can be rewritten safely and
 more elegant like this:
 
 ```typescript
-@DecoratedClass
 export class ParentComponent extends BaseComponent {
     @Input() public id: string;
     @NgCycle('init')
@@ -233,7 +293,9 @@ export class ParentComponent extends BaseComponent {
     }
 }
 
-@DecoratedClass
+@Component({
+    ...
+})
 export class ChildComponent extends ParentComponent {
     private _myProperty: string;
     @NgCycle('init')
@@ -273,7 +335,6 @@ annotation:
 
 ```typescript
 @Component({...})
-@DecoratedClass
 export class MyComponent extends BaseComponent {
     @Watcher('input1')
     private _input1Changed(c: SimpleChanges) {
@@ -292,7 +353,6 @@ like this:
 
 ```typescript
 @Component({...})
-@DecoratedClass
 export class MyComponent extends BaseComponent {
     @Watcher('input1')
     @Watcher('input2')
@@ -348,7 +408,6 @@ Now, compare this ugly thing with the following beauty:
 @Component({
     ...
 })
-@DecoratedClass
 export class MyCoolComponent extends BaseComponent {
     @Cabled(MyService) private _myService: MyService;
     @Cabled(MySecondService) private _mySecondService: MySecondService;
@@ -380,7 +439,6 @@ const SUBSCRIPTION_TYPE = 'my-separate-subscription';
 @Component({
     ...
 })
-@DecoratedClass
 export class MyCoolComponent extends BaseComponent {
     @Cabled(MyService) private _myService: MyService;
 
@@ -425,8 +483,8 @@ like this:
     ...
 })
 export class MyCoolModule extends BaseModule {
-    constructor(_inj: Injector) {
-        super(_inj);
+    constructor(inj: Injector) {
+        super(inj);
     }
 }
 ```
@@ -434,32 +492,154 @@ export class MyCoolModule extends BaseModule {
 That is it. This is the only price (including no money) that you have to pay
 to use all these marvels that I just presented to you. 
 
-Good luck. 
+#### Helping ng-cable
 
-### Bonus for test cases
+When using the `BaseModule`, there is a second parameter that you can pass to
+`ng-cabled`. The second parameter represents the list of providers. This is
+not mandatory. If you don't pass it, the `ng-cabled` library will try to
+retrieve it from the angular module. The problem with this is that this is not
+a public API. So, it might fail in a future version. 
 
-You also have the annotations `NgTestUnit` and `NgTest`, `FNgTest` and
-`XNgTest`. These annotations are used if you want to generate test cases
-instead of using directly `describe` and `it`.
-
-In my oppinion, using `it`, `xit` and `fit` together with `describe` and
-`configureTestingModule` is a lot of boilerplate code. So, I prefer to do my
-test cases like this:
+Of course, I will try to maintain this also in future versions, but since it's
+not using a public API, it might stop working without any deperecation
+notices. If you want to be sure you won't be experiencing any issues, you can
+set your module like this:
 
 ```typescript
-@NgTestUnit({
-    // list of providers
+const PROVIDERS = [
+    MyService1, MyService2, ... // list is my list of providers
+];
+
+@NgModule({
+    ...
+    providers: PROVIDERS,
     ...
 })
-export class MyCoolTestUnit {
+export class MyModule extends BaseModule {
+    constructor(inj: Injector) {
+        super(inj, PROVIDERS);
+    }
+}
+```
+
+Notice that I write the list of providers only once, and I also pass it to
+`ng-cabled`. Like this, I am making sure `ng-cabled` is not using Angular
+private API's.
+
+Good luck. 
+
+### Testing
+
+`ng-cabled` provides also testing via annotations using `ng-cabled/testing`. 
+
+In my oppinion, `describe`, `it`, `xit` and `fit` are very verbose. I don't
+like all the boilerplate code that needs to be written to set the test bed. 
+
+`ng-cabled` provides some annotations that will help testing: `NgTestUnit` and
+`NgTest`, `FNgTest` and `XNgTest`. 
+
+Another priciple that I follow when writting unit test cases is that I don't
+do unit test cases for components. For testing component we have the e2e
+testing. If you need to test the component with a unit test, it means that you
+did it wrong. According to the `MVC` principles, the component (which can be
+seen as the controller) has to be a dumb class. It should just take values
+from the services and pass them to the view. 
+
+I received quite a lot of times the question: "but if you don't test
+components, how are you going to test for example that something is displayed
+when using an `ngIf`". 
+
+Well, if the component is well designed, that `ngIf` should be something very
+simple like `*ngIf="value"` and that value should come from a service, or
+something like `*ngIf="model | myPipe"`. What you need to test in an unit test
+is the respective service or the pipe. After that you will trust Angular to do
+it's job. Testing the fact that the element is displayed in the DOM would mean
+actually testing that Angular is doing it's job. I'm sure they have their own
+test cases, we don't need to build new ones. 
+
+So, to recap. If you build your components properly and you don't need to unit
+test them, if you only test the services in isolation, then you can use the
+annotations provided by `ng-cabled/testing`. 
+
+***NgTestUnit***
+
+This should annotate a test unit. It takes as a parameter an array of
+providers. Basically, instead of using `configureTestingModule`, you pass the
+providers via the `NgTestUnit`. Then, each method of the class, annotated with
+`NgTest` is a test case. For example, the following: 
+
+```typescript
+
+@NgTestUnit([
+    MyService1, MyService2
+])
+export class MyFirstTestUnit {
+    @Cabled(MyService1) private _service1: MyService1;
+    @Cabled(MyService2) private _service2: MyService2;
+
     @NgTest()
-    public myCoolTestCase() {
+    public testCase1() {
+        ...
+    }
+
+    @NgTest()
+    public testCase2() {
         ...
     }
 }
 ```
 
-The parameters of the test unit are the providers that you want to pass to
-`configureTestingModule`. 
+would be translated like this:
 
-For a detailed example, see the `ts/testing/decorators.spec.ts` file. 
+```typescript
+describe('...', () => {
+    let _service1: MyService1;
+    let _service2: MyService2;
+
+    beforeAll(() => {
+        TestBed.configureTestingModule({
+            providers: [MyService1, MyService2],
+        });
+
+        _service1 = TestBed.get(MyService1);
+        _service2 = TestBed.get(MyService2);
+    });
+
+    it('runs test case 1', () => {
+        ...
+    });
+
+    it('runs test case 2', () => {
+        ...
+    });
+})
+```
+
+Personally, I prefer to write it the java way, using a simple annotated class. 
+
+The methods annotated with `XNgTest` or `FNgTest` are translated using `xit`
+or `fit` instead of `it`.
+
+In order to use these, you need to include all the specs containing the test
+units and then to call the method `startTesting` from `ng-cabled/testing`. 
+
+For an example, check the file `main.test.ts`: 
+
+```typescript
+import { startTesting } from 'ng-cabled/testing';
+import './testing/decorators.spec';
+
+startTesting();
+```
+
+Another advantage that you have if you build your components properly, is that
+you don't need karma or a browser (meaning a DOM) to run the unit tests. You
+can run them as a simple node process. 
+
+If you are interested in how to do this, check out the `angular.json` file of
+`ng-cabled`. See the "js" application. Or you can simply build them with
+`tsc`. However, running the tests with `tsc` will probably require `babel`.
+Even though you will not be testing the components, it is possible that some
+services will call in some DOM parts which will fail in node. So you will need
+`Babel` to remove those parts. If you don't want to complicate your life with
+`Babel`, see the job "test" from the `package.json` of `ng-cabled`.

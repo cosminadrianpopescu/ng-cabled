@@ -1,6 +1,6 @@
-import { Injector, SimpleChanges } from "@angular/core";
+import { Injector, Provider, SimpleChanges, Type } from "@angular/core";
 import { Observable, Subscription } from "rxjs";
-import { CycleType, DecoratedClass, DecoratorMetadata, getCycles, getWatchers, processModifiedClasses } from "./decorators";
+import { CabledClass, CycleType, DecoratedClass, DecoratorMetadata, getCycles, getWatchers, instantiateClasses, processDependencies } from "./decorators";
 
 const DEFAULT_SUBSCRIPTION_TYPE = '__defaultsubscriptiontype__';
 
@@ -16,8 +16,14 @@ export function UUID(): string {
     });
 }
 
+export function CabledClassFactory(type: Type<any>, deps?: Array<any>) {
+    const result = new type(...(deps || []));
+    processDependencies(result);
+    return result;
+}
+
 @DecoratedClass
-export class BaseComponent {
+export class BaseComponent extends CabledClass {
     public id: string;
 
     private __cycles__: Map<string, Array<string>> = new Map<string, Array<string>>();
@@ -27,6 +33,7 @@ export class BaseComponent {
     protected _isValid: boolean = true;
 
     constructor() {
+        super();
         this.__watchers__ = getWatchers(this.constructor);
         this.__watchers__.reverse();
         const cycles = getCycles(this.constructor);
@@ -92,15 +99,13 @@ export class BaseComponent {
 }
 
 export class BaseModule {
-    constructor(_inj: Injector) {
+    constructor(_inj: Injector, providers?: Array<Provider>) {
         if (!_inj) {
             console.error('You are extending BaseModule without providing the injector.');
             throw 'INJECTOR_NOT_PASSED';
         }
 
-        processModifiedClasses(_inj);
-
-        // processAllInjectors(_inj);
+        instantiateClasses(_inj, providers || this.constructor['ɵinj'].providers);
         // processPostConstruct(_inj);
     }
 }

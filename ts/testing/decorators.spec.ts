@@ -1,10 +1,10 @@
-import {InjectionToken, SimpleChange, SimpleChanges} from '@angular/core';
+import {InjectFlags, InjectionToken, SimpleChange, SimpleChanges} from '@angular/core';
 import {BaseComponent} from '../base';
-import {Cabled, DecoratedClass, FNgTest, NgCycle, NgTest, NgTestUnit, PostConstruct, Watcher} from '../decorators';
+import {Cabled, CabledClass, DecoratedClass, FNgTest, NgCycle, NgTest, NgTestUnit, PostConstruct, processDependencies, Watcher} from '../decorators';
+import { TestBed } from '@angular/core/testing';
 
 const TOKEN = new InjectionToken<string>(undefined);
 
-@DecoratedClass
 class DummyComponent extends BaseComponent {
     public a: string;
     public b: string;
@@ -33,7 +33,6 @@ class DummyComponent extends BaseComponent {
     }
 }
 
-@DecoratedClass
 class SecondDummyComponent extends BaseComponent {
     public a: string;
     public b: string;
@@ -73,13 +72,12 @@ class SecondDummyComponent extends BaseComponent {
     }
 }
 
-@DecoratedClass
 class DummyChildComponent extends DummyComponent {
 
 }
 
 @DecoratedClass
-class DummyService {
+class DummyServiceDecorated {
     public x: string;
     public e: string;
 
@@ -95,6 +93,36 @@ class DummyService {
 }
 
 @DecoratedClass
+class DummyServiceWithCables {
+    @Cabled(DummyServiceDecorated) public service: DummyServiceDecorated;
+}
+
+let angularFactoryClass = class AngularFactory {
+    private _service: DummyServiceWithCables;
+
+    static fac(): AngularFactory {
+        return new AngularFactory();
+    }
+}
+
+Cabled(DummyServiceWithCables)(angularFactoryClass.prototype, '_service');
+angularFactoryClass = DecoratedClass(angularFactoryClass);
+
+let angularFactoryClass2 = class AngularFactory2 extends CabledClass {
+    private _service: DummyServiceWithCables;
+
+    static fac(): AngularFactory2 {
+        return new AngularFactory2();
+    }
+}
+
+Cabled(DummyServiceWithCables)(angularFactoryClass2.prototype, '_service');
+
+class CabledComponent extends BaseComponent {
+    @Cabled(DummyServiceDecorated) public service: DummyServiceDecorated;
+}
+
+@DecoratedClass
 class DummyServiceNotProvided {
     public x: string;
     constructor() {
@@ -103,12 +131,13 @@ class DummyServiceNotProvided {
 }
 
 @NgTestUnit([
-    DummyService,
-    {provide: TOKEN, useClass: DummyService}
+    DummyServiceDecorated, {provide: angularFactoryClass, useFactory: angularFactoryClass.fac},
+    {provide: angularFactoryClass2, useFactory: angularFactoryClass2.fac},
+    DummyServiceWithCables, {provide: TOKEN, useClass: DummyServiceDecorated}
 ])
 export class DecoratorsTest {
-    @Cabled(DummyService) private _service: DummyService;
-    @Cabled(TOKEN) private _tokenService: DummyService;
+    @Cabled(DummyServiceDecorated) private _service: DummyServiceDecorated;
+    @Cabled(TOKEN) private _tokenService: DummyServiceDecorated;
     @Cabled(DummyServiceNotProvided, null) private _notProvService: DummyServiceNotProvided;
 
     private _assertComponent(c: DummyComponent) {
@@ -134,10 +163,10 @@ export class DecoratorsTest {
         this._assertComponent(c);
     }
 
-    private _assertService(s: DummyService) {
+    private _assertService(s: DummyServiceDecorated) {
         expect(s).toBeDefined();
-        expect(s.constructor.name).toEqual('DummyService');
-        expect(s instanceof DummyService).toBeTruthy();
+        expect(s.constructor.name).toEqual(DummyServiceDecorated.name);
+        expect(s instanceof DummyServiceDecorated).toBeTruthy();
     }
 
     @NgTest()
@@ -166,5 +195,33 @@ export class DecoratorsTest {
         // Expect to make 5 assertions, no more, no less. 
         expect(c.assertions).toEqual(5);
     }
-}
 
+    @NgTest()
+    public testComponentWithCabled() {
+        const c = new CabledComponent();
+        expect(c.service).toBeDefined();
+        expect(c.service instanceof DummyServiceDecorated).toBeTrue();
+    }
+
+    @NgTest('test case when the angular factory is created before DecoratedClass annotation is applied')
+    public testAngularFactory() {
+        const i = TestBed.get(angularFactoryClass, null, InjectFlags.Default);
+        expect(i._service).toBeUndefined();
+        processDependencies(i);
+        expect(i._service).toBeDefined();
+        expect(i._service instanceof DummyServiceWithCables).toBeTrue();
+        expect((i._service as DummyServiceWithCables).service).toBeDefined();
+        expect((i._service as DummyServiceWithCables).service instanceof DummyServiceDecorated).toBeTrue();
+        expect((i._service as DummyServiceWithCables).service.e).toEqual('post');
+    }
+
+    @NgTest('test case when the angular factory is created before DecoratedClass anotation, but the service extends CabledClass')
+    public testAngularFactory2() {
+        const i = TestBed.get(angularFactoryClass2, null, InjectFlags.Default);
+        expect(i._service).toBeDefined();
+        expect(i._service instanceof DummyServiceWithCables).toBeTrue();
+        expect((i._service as DummyServiceWithCables).service).toBeDefined();
+        expect((i._service as DummyServiceWithCables).service instanceof DummyServiceDecorated).toBeTrue();
+        expect((i._service as DummyServiceWithCables).service.e).toEqual('post');
+    }
+}
