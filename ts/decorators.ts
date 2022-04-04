@@ -15,7 +15,9 @@ const CYCLES_KEY = '__cycles__';
 const POST_CONSTRUCT_KEY = '__post-construct__';
 const TESTS_KEY = '__testsunits__';
 const WITH_SERVICES = '__service__';
+const DEPENDENCIES = '__dependencies__';
 const WATCHERS_KEY = '__watcherskey__';
+const IS_PROXY = '__isproxy__';
 const PROXY = '__proxy__';
 
 export const TEST_CASES: Map<Function, Array<TestCase>> = new Map<Function, Array<TestCase>>();
@@ -115,11 +117,11 @@ export function instantiateClasses(inj: Injector, providers: Array<Provider>) {
         });
 }
 
-export function processDependencies(instance: Function, isProxy: boolean = false): Array<string> {
+export function processDependencies(instance: Function) {
     if (instance[CLASS_INSTANTIATED]) {
         return ;
     }
-    if (isProxy) {
+    if (instance[IS_PROXY]) {
         Object.defineProperty(instance, PROXY, {configurable: true, enumerable: true, value: {}});
     }
     const ctor: ClassConstructor = instance.constructor as any;
@@ -131,7 +133,7 @@ export function processDependencies(instance: Function, isProxy: boolean = false
         if (i) {
             processDependencies(i);
         }
-        Object.defineProperty(isProxy ? instance[PROXY] : instance, d.prop, {
+        Object.defineProperty(instance[IS_PROXY] ? instance[PROXY] : instance, d.prop, {
             enumerable: true, configurable: true, writable: true,
             value: i,
         });
@@ -142,7 +144,7 @@ export function processDependencies(instance: Function, isProxy: boolean = false
 
     instance[CLASS_INSTANTIATED] = true;
 
-    return deps.map(d => d.prop);
+    instance[DEPENDENCIES] = deps.map(d => d.prop);
 }
 
 export function __decorateProperty<T extends DecoratorParameterType>(decorationName: string, arg: T): any {
@@ -227,11 +229,11 @@ export function __getDecoratedClasses(key: string): Array<DecoratedClass> {
 
 @DecoratedClass
 export class CabledClass {
-    private __dependencies__: Array<string> = [];
     constructor() {
-        this.__dependencies__ = processDependencies(this as any, true);
+        this[IS_PROXY] = true;
+        processDependencies(this as any);
         const handle = function(target: any, prop: string, receiver: any) {
-            if (this.__dependencies__.indexOf(prop) == -1) {
+            if (this[DEPENDENCIES].indexOf(prop) == -1) {
                 return Reflect.get(target, prop, receiver);
             }
             return this[PROXY][prop];
