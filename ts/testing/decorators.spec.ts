@@ -237,7 +237,7 @@ export class DecoratorsTest {
 
     @NgTest('test case when providing a service that extends CabledClass instead of using DecoratedClass annotation')
     public testServiceExtendingCabledClass() {
-        expect(this._serviceExtendingCabledClassWithCables.service).toBeUndefined();
+        expect(this._serviceExtendingCabledClassWithCables.service).toBeDefined();
         expect(this._serviceExtendingCabledClassWithCables.service.service).toBeDefined();
         expect(this._serviceExtendingCabledClassWithCables.service.service instanceof DummyServiceDecorated).toBeTrue();
     }
