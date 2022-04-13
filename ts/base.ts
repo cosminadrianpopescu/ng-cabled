@@ -105,7 +105,7 @@ export class BaseModule {
             throw 'INJECTOR_NOT_PASSED';
         }
 
-        instantiateClasses(_inj, providers || this.constructor['ɵinj'].providers);
+        instantiateClasses(_inj, providers || this.constructor['ɵinj'].providers || []);
         // processPostConstruct(_inj);
     }
 }
