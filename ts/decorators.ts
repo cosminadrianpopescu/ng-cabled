@@ -81,7 +81,7 @@ export function XNgTest(name?: string) {
     return __decorateProperty(TESTS_KEY, <TestCase>{ name: name, x: true, f: false });
 }
 
-export function getInjectors<T extends DecoratorParameterType>(ctor: ClassConstructor): Array<DecoratorMetadata<T>> {
+export function getDependencies<T extends DecoratorParameterType>(ctor: ClassConstructor): Array<DecoratorMetadata<T>> {
     return __getDecorations(ctor.prototype, CABLED_KEY);
 }
 
@@ -125,7 +125,7 @@ export function processDependencies(instance: Function) {
         Object.defineProperty(instance, PROXY, {configurable: true, enumerable: true, value: {}});
     }
     const ctor: ClassConstructor = instance.constructor as any;
-    const deps = getInjectors(ctor);
+    const deps = getDependencies(ctor);
     const inj = ctor[INJECTOR];
     deps.forEach(d => {
         const a = d.arg as NgServiceArguments;
