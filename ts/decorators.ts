@@ -10,13 +10,16 @@ const DECORATORS = '__decorators__';
 const CABLED_KEY = '__cabled__';
 const TEST_UNITS = '__testunits__';
 const CLASS_INSTANTIATED = '__classinstantiated__';
-const INJECTOR = '__injector__';
+const INJECTORS = {};
 const CYCLES_KEY = '__cycles__';
 const POST_CONSTRUCT_KEY = '__post-construct__';
 const TESTS_KEY = '__testsunits__';
 const WITH_SERVICES = '__service__';
+const DEPENDENCIES = '__dependencies__';
 const WATCHERS_KEY = '__watcherskey__';
+const IS_PROXY = '__isproxy__';
 const PROXY = '__proxy__';
+let CURRENT_INJECTOR: Injector = null;
 
 export const TEST_CASES: Map<Function, Array<TestCase>> = new Map<Function, Array<TestCase>>();
 export const TEST_CASES_ONLY: Map<Function, Array<TestCase>> = new Map<Function, Array<TestCase>>();
@@ -79,7 +82,7 @@ export function XNgTest(name?: string) {
     return __decorateProperty(TESTS_KEY, <TestCase>{ name: name, x: true, f: false });
 }
 
-export function getInjectors<T extends DecoratorParameterType>(ctor: ClassConstructor): Array<DecoratorMetadata<T>> {
+export function getDependencies<T extends DecoratorParameterType>(ctor: ClassConstructor): Array<DecoratorMetadata<T>> {
     return __getDecorations(ctor.prototype, CABLED_KEY);
 }
 
@@ -100,9 +103,9 @@ export function getTestcases<T extends DecoratorParameterType>(instance: Functio
     return __getDecorations(instance.prototype, TESTS_KEY);
 }
 
-export function instantiateClasses(inj: Injector, providers: Array<Provider>) {
+export async function bootstrapModule(inj: Injector, providers: Array<Provider>) {
     const classes = __getDecoratedClasses(WITH_SERVICES).concat(__getDecoratedClasses(TEST_UNITS));
-    classes.forEach(c => Object.defineProperty(c.ctor, INJECTOR, {configurable: true, value: inj}));
+    CURRENT_INJECTOR = inj;
     providers
         .map(p => typeof(p) == 'function' ? p : p['useClass'] ? p['provide'] : null)
         .filter(p => !!p)
@@ -113,25 +116,62 @@ export function instantiateClasses(inj: Injector, providers: Array<Provider>) {
             }
             processDependencies(i);
         });
+
+    await new Promise(resolve => setTimeout(resolve));
+    CURRENT_INJECTOR = null;
+    INJECTORS[__injectorKey()] = inj;
 }
 
-export function processDependencies(instance: Function, isProxy: boolean = false): Array<string> {
+function __injectorKey(): string {
+    return window.location.pathname + window.location.hash;
+}
+
+function __getInjector(): Injector {
+    // If a module is being bootstrapped, then return the current injector
+    // used for bootstrapping the module.
+    if (CURRENT_INJECTOR) {
+        return CURRENT_INJECTOR;
+    }
+
+    const findKey = (key: string): string => Object.keys(INJECTORS).find(k => k.startsWith(key));
+
+    // Otherwise search based on the path. 
+    // We are searching for the first unique path which starts with the 
+    // current path. 
+    let key = __injectorKey();
+    let found: string = null;
+    while (!(found = findKey(key))) {
+        key = key.replace(/^(.*)\/[^\/]+$/, '$1');
+        if (key == '/' || key == '') {
+            return null;
+        }
+    }
+
+    // If we found the injector for a path which is not the current path, 
+    // add the current path in the list.
+    if (found != __injectorKey()) {
+        INJECTORS[__injectorKey()] = INJECTORS[found];
+    }
+    return INJECTORS[found];
+}
+
+export function processDependencies(instance: Function) {
     if (instance[CLASS_INSTANTIATED]) {
         return ;
     }
-    if (isProxy) {
+    if (instance[IS_PROXY]) {
         Object.defineProperty(instance, PROXY, {configurable: true, enumerable: true, value: {}});
     }
     const ctor: ClassConstructor = instance.constructor as any;
-    const deps = getInjectors(ctor);
-    const inj = ctor[INJECTOR];
+    const deps = getDependencies(ctor);
+    const inj = __getInjector();
     deps.forEach(d => {
         const a = d.arg as NgServiceArguments;
         const i = inj.get(a.type as Type<any>, typeof(a.def) == 'undefined' ? undefined : a.def, InjectFlags.Default);
         if (i) {
             processDependencies(i);
         }
-        Object.defineProperty(isProxy ? instance[PROXY] : instance, d.prop, {
+        Object.defineProperty(instance[IS_PROXY] ? instance[PROXY] : instance, d.prop, {
             enumerable: true, configurable: true, writable: true,
             value: i,
         });
@@ -142,7 +182,7 @@ export function processDependencies(instance: Function, isProxy: boolean = false
 
     instance[CLASS_INSTANTIATED] = true;
 
-    return deps.map(d => d.prop);
+    instance[DEPENDENCIES] = deps.map(d => d.prop);
 }
 
 export function __decorateProperty<T extends DecoratorParameterType>(decorationName: string, arg: T): any {
@@ -227,11 +267,11 @@ export function __getDecoratedClasses(key: string): Array<DecoratedClass> {
 
 @DecoratedClass
 export class CabledClass {
-    private __dependencies__: Array<string> = [];
     constructor() {
-        this.__dependencies__ = processDependencies(this as any, true);
+        this[IS_PROXY] = true;
+        processDependencies(this as any);
         const handle = function(target: any, prop: string, receiver: any) {
-            if (this.__dependencies__.indexOf(prop) == -1) {
+            if (this[DEPENDENCIES].indexOf(prop) == -1) {
                 return Reflect.get(target, prop, receiver);
             }
             return this[PROXY][prop];

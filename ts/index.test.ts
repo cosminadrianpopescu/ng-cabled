@@ -48,7 +48,7 @@ export async function startTesting() {
     const units = getTestunits();
 
     units.forEach(unit => {
-        describe(`Running ${unit.name}`, () => {
+        describe(`Running ${unit.name} -`, () => {
             afterAll(() => getTestBed().resetTestingModule());
             const tests = getTestcases(unit);
             beforeAll(() => {
@@ -60,7 +60,7 @@ export async function startTesting() {
             tests.forEach(t => {
                 const tc = t.arg as any;
                 const callback = tc.x ? xit : tc.f ? fit : it;
-                callback(`Running test case ${tc.name || t.prop}`, () => {
+                callback(`${tc.name || t.prop}`, () => {
                     // const instance = Object.create(unit.prototype);
                     const instance = getTestBed().get(unit);
                     return instance[t.prop].bind(instance)();
@@ -69,5 +69,11 @@ export async function startTesting() {
         });
     });
 
+    const oldSpecDone = j.reporter.specDone;
+
+    j.reporter.specDone = function(result: { fullName: any; status: any; }) {
+        console.log('Finished', result.fullName, ' => ', result.status);
+        oldSpecDone(result);
+    };
     j.execute();
 }

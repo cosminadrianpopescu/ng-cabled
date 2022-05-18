@@ -92,6 +92,14 @@ class DummyServiceDecorated {
     }
 }
 
+class ServiceExtendingCabledClass extends CabledClass {
+    @Cabled(DummyServiceDecorated) public service: DummyServiceDecorated;
+}
+
+class ServiceExtendingCabledClassWithCables extends CabledClass {
+    @Cabled(ServiceExtendingCabledClass) public service: ServiceExtendingCabledClass;
+}
+
 @DecoratedClass
 class DummyServiceWithCables {
     @Cabled(DummyServiceDecorated) public service: DummyServiceDecorated;
@@ -133,12 +141,14 @@ class DummyServiceNotProvided {
 @NgTestUnit([
     DummyServiceDecorated, {provide: angularFactoryClass, useFactory: angularFactoryClass.fac},
     {provide: angularFactoryClass2, useFactory: angularFactoryClass2.fac},
-    DummyServiceWithCables, {provide: TOKEN, useClass: DummyServiceDecorated}
+    DummyServiceWithCables, {provide: TOKEN, useClass: DummyServiceDecorated}, 
+    ServiceExtendingCabledClassWithCables, ServiceExtendingCabledClass,
 ])
 export class DecoratorsTest {
     @Cabled(DummyServiceDecorated) private _service: DummyServiceDecorated;
     @Cabled(TOKEN) private _tokenService: DummyServiceDecorated;
     @Cabled(DummyServiceNotProvided, null) private _notProvService: DummyServiceNotProvided;
+    @Cabled(ServiceExtendingCabledClassWithCables) private _serviceExtendingCabledClassWithCables: ServiceExtendingCabledClassWithCables;
 
     private _assertComponent(c: DummyComponent) {
         expect(c.a).toBeUndefined();
@@ -223,5 +233,12 @@ export class DecoratorsTest {
         expect((i._service as DummyServiceWithCables).service).toBeDefined();
         expect((i._service as DummyServiceWithCables).service instanceof DummyServiceDecorated).toBeTrue();
         expect((i._service as DummyServiceWithCables).service.e).toEqual('post');
+    }
+
+    @NgTest('test case when providing a service that extends CabledClass instead of using DecoratedClass annotation')
+    public testServiceExtendingCabledClass() {
+        expect(this._serviceExtendingCabledClassWithCables.service).toBeDefined();
+        expect(this._serviceExtendingCabledClassWithCables.service.service).toBeDefined();
+        expect(this._serviceExtendingCabledClassWithCables.service.service instanceof DummyServiceDecorated).toBeTrue();
     }
 }
