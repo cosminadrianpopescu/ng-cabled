@@ -17,6 +17,10 @@ global['Document'] = <any>process;
 global['window'] = <any>global;
 global['window'].addEventListener = () => {};
 (<any>global['window'])['navigator'] = [];
+(<any>global['window']['location']) = {
+    pathname: '/',
+    hash: '',
+}
 global['document'] = <any>process;
 (<any>global['document'])['head'] = {};
 global['document']['addEventListener'] = () => {};

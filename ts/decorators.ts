@@ -104,7 +104,6 @@ export function getTestcases<T extends DecoratorParameterType>(instance: Functio
 }
 
 export async function bootstrapModule(inj: Injector, providers: Array<Provider>) {
-    const classes = __getDecoratedClasses(WITH_SERVICES).concat(__getDecoratedClasses(TEST_UNITS));
     CURRENT_INJECTOR = inj;
     providers
         .map(p => typeof(p) == 'function' ? p : p['useClass'] ? p['provide'] : null)
