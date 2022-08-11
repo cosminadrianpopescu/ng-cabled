@@ -112,7 +112,7 @@ export class ParentService {
     constructor(private _parentPrivateService: ParentPrivateService) {}
 }
 
-@Component({
+@Injectable({
     ...
 })
 export class ChildService extends ParentService {
