@@ -130,7 +130,7 @@ export class ParentService {
     @Cabled(ParentPrivateService) private _myPrivateService: ParentPrivateService;
 }
 
-@Component({
+@Injectable({
     ...
 })
 @DecoratedClass
