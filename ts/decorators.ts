@@ -11,7 +11,6 @@ const CABLED_KEY = '__cabled__';
 const TEST_UNITS = '__testunits__';
 const CLASS_INSTANTIATED = '__classinstantiated__';
 const INJECTORS = {};
-window['INJECTORS'] = INJECTORS;
 const CYCLES_KEY = '__cycles__';
 const POST_CONSTRUCT_KEY = '__post-construct__';
 const TESTS_KEY = '__testsunits__';
