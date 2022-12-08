@@ -150,6 +150,12 @@ export class DecoratorsTest {
     @Cabled(DummyServiceNotProvided, null) private _notProvService: DummyServiceNotProvided;
     @Cabled(ServiceExtendingCabledClassWithCables) private _serviceExtendingCabledClassWithCables: ServiceExtendingCabledClassWithCables;
 
+    constructor() {
+        if (process.env['NG_CABLED_USE_PROXY']) {
+            window['NG_CABLED_USE_PROXY'] = true;
+        }
+    }
+
     private _assertComponent(c: DummyComponent) {
         expect(c.a).toBeUndefined();
         expect(c.b).toBeUndefined();

@@ -19,6 +19,7 @@ const DEPENDENCIES = '__dependencies__';
 const WATCHERS_KEY = '__watcherskey__';
 const IS_PROXY = '__isproxy__';
 const PROXY = '__proxy__';
+
 let CURRENT_INJECTOR: Injector = null;
 
 export const TEST_CASES: Map<Function, Array<TestCase>> = new Map<Function, Array<TestCase>>();
@@ -154,6 +155,13 @@ function __getInjector(): Injector {
     return INJECTORS[found];
 }
 
+function __createProperty(instance: Function, prop: string, value: any) {
+    Object.defineProperty(instance, prop, {
+        enumerable: true, configurable: true, writable: true,
+        value: value,
+    });
+}
+
 export function processDependencies(instance: Function) {
     if (instance[CLASS_INSTANTIATED]) {
         return ;
@@ -170,10 +178,10 @@ export function processDependencies(instance: Function) {
         if (i) {
             processDependencies(i);
         }
-        Object.defineProperty(instance[IS_PROXY] ? instance[PROXY] : instance, d.prop, {
-            enumerable: true, configurable: true, writable: true,
-            value: i,
-        });
+        __createProperty(instance, d.prop, i);
+        if (instance[IS_PROXY]) {
+            __createProperty(instance[PROXY], d.prop, i);
+        }
     });
 
     const pc = __getDecorations(instance as any, POST_CONSTRUCT_KEY);
@@ -220,22 +228,7 @@ export function __decorateClass(ctor: ClassConstructor, decoration: string, args
 
     classes.get(decoration).push({ctor: ctor, args: args});
     Reflect.defineMetadata(DECORATED_CLASSES, classes, Object);
-    return __modifyClass(ctor);
-}
-
-export function __modifyClass(ctor: ClassConstructor): any {
-    const result = class extends ctor {
-        constructor(...args: Array<any>) {
-            super(...args);
-            processDependencies(this as any);
-        }
-    }
-
-    Object.defineProperty(result, 'name', { value: ctor.name, writable: false });
-    Object.getOwnPropertyNames(ctor)
-        .filter(k => ['length', 'prototype', 'name'].indexOf(k) == -1)
-        .forEach(k => Object.defineProperty(result, k, { value: ctor[k], writable: true, }));
-    return result;
+    return ctor;
 }
 
 export function __getDecorations<T extends DecoratorParameterType>(ctor: ClassConstructor, key: string): Array<DecoratorMetadata<T>> {
@@ -264,21 +257,24 @@ export function __getDecoratedClasses(key: string): Array<DecoratedClass> {
     return classes.get(key) || [];
 }
 
-@DecoratedClass
 export class CabledClass {
     constructor() {
-        this[IS_PROXY] = true;
+        if (window['NG_CABLED_USE_PROXY']) {
+            this[IS_PROXY] = true;
+        }
         processDependencies(this as any);
-        const handle = function(target: any, prop: string, receiver: any) {
-            if (this[DEPENDENCIES].indexOf(prop) == -1) {
-                return Reflect.get(target, prop, receiver);
+        if (window['NG_CABLED_USE_PROXY']) {
+            const handle = function(target: any, prop: string, receiver: any) {
+                if (this[DEPENDENCIES].indexOf(prop) == -1) {
+                    return Reflect.get(target, prop, receiver);
+                }
+                return this[PROXY][prop];
             }
-            return this[PROXY][prop];
+            const handler = {
+                get: handle.bind(this),
+            }
+            return new Proxy(this, handler);
         }
-        const handler = {
-            get: handle.bind(this),
-        }
-        return new Proxy(this, handler);
     }
 }
 
