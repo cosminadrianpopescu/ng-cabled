@@ -184,7 +184,7 @@ export function processDependencies(instance: Function) {
         }
     });
 
-    const pc = __getDecorations(instance as any, POST_CONSTRUCT_KEY);
+    const pc = __getDecorations(Object.getPrototypeOf(instance), POST_CONSTRUCT_KEY);
     pc.forEach(p => instance[p.prop].bind(instance)());
 
     instance[CLASS_INSTANTIATED] = true;
