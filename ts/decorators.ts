@@ -123,7 +123,12 @@ export async function bootstrapModule(inj: Injector, providers: Array<Provider>)
 }
 
 function __injectorKey(): string {
-    return window.location.pathname + window.location.hash;
+    const result = window.location.pathname + window.location.hash;
+    if (result == '/#/') {
+        return '/';
+    }
+
+    return result;
 }
 
 function __getInjector(): Injector {
