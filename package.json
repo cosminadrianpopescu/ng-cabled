@@ -1,10 +1,9 @@
 {
     "name": "ng-cabled",
-    "version": "3.0.1",
+    "version": "3.0.2",
     "description": "Library for ease of creating extensible angular components",
     "main": "dist/index.js",
     "composite": true,
-    "types": "dist/index.d.ts",
     "scripts": {
         "test2": "tsc -p tsconfig.test.json && cd test-build && ../tomjs && node --enable-source-maps=true --experimental-specifier-resolution=node ./main.test.mjs && NG_CABLED_USE_PROXY=1 node --enable-source-maps=true --experimental-specifier-resolution=node ./main.test.mjs",
         "test": "ng build js && node ./test-build/main.js && NG_CABLED_USE_PROXY=1 node ./test-build/main.js",
@@ -12,6 +11,16 @@
         "pre": "npm run build && cp package.json ./dist/package.json",
         "pack": "npm run pre && cd dist && npm pack",
         "publish": "npm run pre && cp README.md ./dist/README.md && cd dist && npm publish"
+    },
+    "exports": {
+        ".": {
+            "types": "./index.d.ts",
+            "esm2020": "./esm2020/index.mjs",
+            "es2020": "./fesm2020/ng-cabled.mjs",
+            "es2015": "./fesm2015/ng-cabled.mjs",
+            "node": "./fesm2015/ng-cabled.mjs",
+            "default": "./fesm2020/ng-cabled.mjs"
+        }
     },
     "author": "Cosmin Popescu",
     "homepage": "https://github.com/cosminadrianpopescu/ng-cabled",
