@@ -34,8 +34,8 @@
                 "build": {
                     "builder": "@angular-devkit/build-angular:ng-packagr",
                     "options": {
-                        "project": "./testing/ng-package.json",
-                        "tsConfig": "./testing/tsconfig.json"
+                        "project": "./ng-package.json",
+                        "tsConfig": "./tsconfig.test2.json"
                     }
                 }
             }
@@ -56,7 +56,7 @@
                         "preserveSymlinks": true,
                         "sourceMap": true,
                         "namedChunks": true,
-                        "tsConfig": "./tsconfig.test.json"
+                        "tsConfig": "./tsconfig.webpack.json"
                     }
                 }
             }
