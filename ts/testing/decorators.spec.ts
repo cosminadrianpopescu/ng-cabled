@@ -1,7 +1,7 @@
-import {Injectable, InjectFlags, InjectionToken, runInInjectionContext, SimpleChange, SimpleChanges} from '@angular/core';
-import {BaseComponent} from '../base';
-import {Cabled, CabledClass, DecoratedClass, FNgTest, NgCycle, NgTest, NgTestUnit, PostConstruct, processDependencies, Watcher} from '../decorators';
+import { Injectable, InjectFlags, InjectionToken, runInInjectionContext, SimpleChange, SimpleChanges } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { BaseComponent, CabledClassFactory } from '../base';
+import { Cabled, DecoratedClass, FNgTest, NgCycle, NgTest, NgTestUnit, PostConstruct, processDependencies, Watcher } from '../decorators';
 
 const TOKEN = new InjectionToken<string>(undefined);
 
@@ -93,11 +93,12 @@ class DummyServiceDecorated {
 }
 
 @Injectable()
-class ServiceExtendingCabledClass extends CabledClass {
+class ServiceExtendingCabledClass {
     @Cabled(DummyServiceDecorated) public service: DummyServiceDecorated;
 }
 
-class ServiceExtendingCabledClassWithCables extends CabledClass {
+@Injectable()
+class ServiceExtendingCabledClassWithCables {
     @Cabled(ServiceExtendingCabledClass) public service: ServiceExtendingCabledClass;
 }
 
@@ -117,13 +118,19 @@ let angularFactoryClass = class AngularFactory {
 Cabled(DummyServiceWithCables)(angularFactoryClass.prototype, '_service');
 angularFactoryClass = DecoratedClass(angularFactoryClass);
 
-let angularFactoryClass2 = class AngularFactory2 extends CabledClass {
+class AngularFactory2 {
     private _service: DummyServiceWithCables;
 
     static fac(): AngularFactory2 {
-        return new AngularFactory2();
+        let result: AngularFactory2;
+        runInInjectionContext(TestBed, () => {
+            result = CabledClassFactory(AngularFactory2);
+        })
+        return result;
     }
 }
+
+let angularFactoryClass2 = AngularFactory2;
 
 Cabled(DummyServiceWithCables)(angularFactoryClass2.prototype, '_service');
 
@@ -216,7 +223,7 @@ export class DecoratorsTest {
     @NgTest()
     public testComponentWithCabled() {
         runInInjectionContext(TestBed, () => {
-            const c = new CabledComponent();
+            const c = CabledClassFactory(CabledComponent);
             expect(c.service).toBeDefined();
             expect(c.service instanceof DummyServiceDecorated).toBeTrue();
         });

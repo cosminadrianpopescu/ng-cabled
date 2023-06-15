@@ -224,26 +224,3 @@ export function __getDecoratedClasses(key: string): Array<DecoratedClass> {
 
     return classes.get(key) || [];
 }
-
-@Injectable()
-export class CabledClass {
-    constructor() {
-        if (window['NG_CABLED_USE_PROXY']) {
-            this[IS_PROXY] = true;
-        }
-        processDependencies(this as any);
-        if (window['NG_CABLED_USE_PROXY']) {
-            const handle = function(target: any, prop: string, receiver: any) {
-                if (this[DEPENDENCIES].indexOf(prop) == -1) {
-                    return Reflect.get(target, prop, receiver);
-                }
-                return this[PROXY][prop];
-            }
-            const handler = {
-                get: handle.bind(this),
-            }
-            return new Proxy(this, handler);
-        }
-    }
-}
-

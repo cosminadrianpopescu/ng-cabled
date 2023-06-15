@@ -1,6 +1,6 @@
-import { Injector, Provider, SimpleChanges, Type } from "@angular/core";
+import { Provider, SimpleChanges, Type } from "@angular/core";
 import { Observable, Subscription } from "rxjs";
-import { CabledClass, CycleType, DecoratedClass, DecoratorMetadata, getCycles, getWatchers, bootstrapModule, processDependencies } from "./decorators";
+import { bootstrapModule, CycleType, DecoratedClass, DecoratorMetadata, getCycles, getWatchers, processDependencies } from "./decorators";
 
 const DEFAULT_SUBSCRIPTION_TYPE = '__defaultsubscriptiontype__';
 
@@ -23,7 +23,7 @@ export function CabledClassFactory(type: Type<any>, deps?: Array<any>) {
 }
 
 @DecoratedClass
-export class BaseComponent extends CabledClass {
+export class BaseComponent {
     public id: string;
 
     private __cycles__: Map<string, Array<string>> = new Map<string, Array<string>>();
@@ -33,7 +33,6 @@ export class BaseComponent extends CabledClass {
     protected _isValid: boolean = true;
 
     constructor() {
-        super();
         this.__watchers__ = getWatchers(this.constructor);
         this.__watchers__.reverse();
         const cycles = getCycles(this.constructor);
