@@ -1,4 +1,4 @@
-import {InjectFlags, InjectionToken, SimpleChange, SimpleChanges} from '@angular/core';
+import {Injectable, InjectFlags, InjectionToken, runInInjectionContext, SimpleChange, SimpleChanges} from '@angular/core';
 import {BaseComponent} from '../base';
 import {Cabled, CabledClass, DecoratedClass, FNgTest, NgCycle, NgTest, NgTestUnit, PostConstruct, processDependencies, Watcher} from '../decorators';
 import { TestBed } from '@angular/core/testing';
@@ -92,6 +92,7 @@ class DummyServiceDecorated {
     }
 }
 
+@Injectable()
 class ServiceExtendingCabledClass extends CabledClass {
     @Cabled(DummyServiceDecorated) public service: DummyServiceDecorated;
 }
@@ -214,16 +215,20 @@ export class DecoratorsTest {
 
     @NgTest()
     public testComponentWithCabled() {
-        const c = new CabledComponent();
-        expect(c.service).toBeDefined();
-        expect(c.service instanceof DummyServiceDecorated).toBeTrue();
+        runInInjectionContext(TestBed, () => {
+            const c = new CabledComponent();
+            expect(c.service).toBeDefined();
+            expect(c.service instanceof DummyServiceDecorated).toBeTrue();
+        });
     }
 
     @NgTest('test case when the angular factory is created before DecoratedClass annotation is applied')
     public testAngularFactory() {
         const i = TestBed.get(angularFactoryClass, null, InjectFlags.Default);
         expect(i._service).toBeUndefined();
-        processDependencies(i);
+        runInInjectionContext(TestBed, () => {
+            processDependencies(i);
+        })
         expect(i._service).toBeDefined();
         expect(i._service instanceof DummyServiceWithCables).toBeTrue();
         expect((i._service as DummyServiceWithCables).service).toBeDefined();

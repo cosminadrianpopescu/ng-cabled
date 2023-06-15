@@ -9,6 +9,7 @@ import { getTestcases, getTestunits } from './decorators';
 import { BaseModule } from './base';
 import 'reflect-metadata';
 import 'zone.js';
+import { runInInjectionContext } from '@angular/core';
 // var jasmine = global['jasmine'];
 // var j = new jasmine.default({});
 getTestBed().initTestEnvironment(BrowserDynamicTestingModule, platformBrowserDynamicTesting());
@@ -30,9 +31,11 @@ global['document']['addEventListener'] = () => {};
 const tb = getTestBed();
 
 const _config = tb.configureTestingModule;
-tb.configureTestingModule = (...args: Array<any>) => {
+(tb.configureTestingModule as any) = (...args: Array<any>) => {
     _config.apply(getTestBed(), args);
-    new BaseModule(getTestBed(), args.map(a => a.providers).reduce((acc, v) => acc.concat(v), []));
+    runInInjectionContext(TestBed, () => {
+        new BaseModule(args.map(a => a.providers).reduce((acc, v) => acc.concat(v), []));
+    })
 }
 
 // Hack for jasmine-core. 

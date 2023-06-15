@@ -1,5 +1,5 @@
 // tslint:disable:no-invalid-this
-import {InjectFlags, InjectionToken, Injector, Provider, Type} from '@angular/core';
+import { inject, Injectable, InjectionToken, Provider, Type } from '@angular/core';
 import 'reflect-metadata';
 
 export type CycleType = 'destroy' | 'afterViewInit' | 'change' | 'init';
@@ -10,7 +10,6 @@ const DECORATORS = '__decorators__';
 const CABLED_KEY = '__cabled__';
 const TEST_UNITS = '__testunits__';
 const CLASS_INSTANTIATED = '__classinstantiated__';
-const INJECTORS = {};
 const CYCLES_KEY = '__cycles__';
 const POST_CONSTRUCT_KEY = '__post-construct__';
 const TESTS_KEY = '__testsunits__';
@@ -19,8 +18,6 @@ const DEPENDENCIES = '__dependencies__';
 const WATCHERS_KEY = '__watcherskey__';
 const IS_PROXY = '__isproxy__';
 const PROXY = '__proxy__';
-
-let CURRENT_INJECTOR: Injector = null;
 
 export const TEST_CASES: Map<Function, Array<TestCase>> = new Map<Function, Array<TestCase>>();
 export const TEST_CASES_ONLY: Map<Function, Array<TestCase>> = new Map<Function, Array<TestCase>>();
@@ -104,60 +101,19 @@ export function getTestcases<T extends DecoratorParameterType>(instance: Functio
     return __getDecorations(instance.prototype, TESTS_KEY);
 }
 
-export async function bootstrapModule(inj: Injector, providers: Array<Provider>) {
-    CURRENT_INJECTOR = inj;
+export function bootstrapModule(providers: Array<Provider>) {
     providers
         .map(p => typeof(p) == 'function' ? p : p['useClass'] ? p['provide'] : null)
         .filter(p => !!p)
         .forEach(p => {
-            const i = inj.get(p, null, InjectFlags.Default);
+            const i = inject(p, {
+                optional: true,
+            })
             if (!i) {
                 return ;
             }
-            processDependencies(i);
+            processDependencies(i as any);
         });
-
-    await new Promise(resolve => setTimeout(resolve));
-    CURRENT_INJECTOR = null;
-    INJECTORS[__injectorKey()] = inj;
-}
-
-function __injectorKey(): string {
-    const result = window.location.pathname + window.location.hash;
-    if (result == '/#/') {
-        return '/';
-    }
-
-    return result;
-}
-
-function __getInjector(): Injector {
-    // If a module is being bootstrapped, then return the current injector
-    // used for bootstrapping the module.
-    if (CURRENT_INJECTOR) {
-        return CURRENT_INJECTOR;
-    }
-
-    const findKey = (key: string): string => Object.keys(INJECTORS).find(k => k.startsWith(key));
-
-    // Otherwise search based on the path. 
-    // We are searching for the first unique path which starts with the 
-    // current path. 
-    let key = __injectorKey();
-    let found: string = null;
-    while (!(found = findKey(key))) {
-        key = key.replace(/^(.*)\/[^\/]+$/, '$1');
-        if (key == '/' || key == '') {
-            return null;
-        }
-    }
-
-    // If we found the injector for a path which is not the current path, 
-    // add the current path in the list.
-    if (found != __injectorKey()) {
-        INJECTORS[__injectorKey()] = INJECTORS[found];
-    }
-    return INJECTORS[found];
 }
 
 function __createProperty(instance: Function, prop: string, value: any) {
@@ -176,10 +132,17 @@ export function processDependencies(instance: Function) {
     }
     const ctor: ClassConstructor = instance.constructor as any;
     const deps = getDependencies(ctor);
-    const inj = __getInjector();
     deps.forEach(d => {
         const a = d.arg as NgServiceArguments;
-        const i = inj.get(a.type as Type<any>, typeof(a.def) == 'undefined' ? undefined : a.def, InjectFlags.Default);
+        const optional = typeof(a.def) != 'undefined';
+        let i = inject(a.type as Type<any>, {
+            optional: optional,
+        });
+
+        if (i == null && optional) {
+            i = a.def;
+        }
+
         if (i) {
             processDependencies(i);
         }
@@ -262,6 +225,7 @@ export function __getDecoratedClasses(key: string): Array<DecoratedClass> {
     return classes.get(key) || [];
 }
 
+@Injectable()
 export class CabledClass {
     constructor() {
         if (window['NG_CABLED_USE_PROXY']) {

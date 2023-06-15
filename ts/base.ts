@@ -99,13 +99,7 @@ export class BaseComponent extends CabledClass {
 }
 
 export class BaseModule {
-    constructor(_inj: Injector, providers?: Array<Provider>) {
-        if (!_inj) {
-            console.error('You are extending BaseModule without providing the injector.');
-            throw 'INJECTOR_NOT_PASSED';
-        }
-
-        bootstrapModule(_inj, providers || this.constructor['ɵinj'].providers || []);
-        // processPostConstruct(_inj);
+    constructor(providers?: Array<Provider>) {
+        bootstrapModule(providers || this.constructor['ɵinj'].providers || []);
     }
 }
