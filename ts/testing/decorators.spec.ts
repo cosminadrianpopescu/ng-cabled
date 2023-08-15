@@ -1,4 +1,4 @@
-import { Injectable, InjectFlags, InjectionToken, runInInjectionContext, SimpleChange, SimpleChanges } from '@angular/core';
+import { inject, Injectable, InjectFlags, InjectionToken, runInInjectionContext, SimpleChange, SimpleChanges } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { BaseComponent, CabledClassFactory } from '../base';
 import { Cabled, DecoratedClass, FNgTest, NgCycle, NgTest, NgTestUnit, PostConstruct, processDependencies, Watcher } from '../decorators';
@@ -146,6 +146,14 @@ class DummyServiceNotProvided {
     }
 }
 
+class DummyServiceOutsideContext {
+    public service = inject(DummyServiceWithCables);
+}
+
+class DummyComponentWithServiceOutsideContext extends BaseComponent {
+
+}
+
 @NgTestUnit([
     DummyServiceDecorated, {provide: angularFactoryClass, useFactory: angularFactoryClass.fac},
     {provide: angularFactoryClass2, useFactory: angularFactoryClass2.fac},
@@ -183,8 +191,10 @@ export class DecoratorsTest {
 
     @NgTest()
     public testNgCycle() {
-        const c = new DummyComponent();
-        this._assertComponent(c);
+        runInInjectionContext(TestBed, () => {
+            const c = new DummyComponent();
+            this._assertComponent(c);
+        });
     }
 
     private _assertService(s: DummyServiceDecorated) {
@@ -207,17 +217,21 @@ export class DecoratorsTest {
 
     @NgTest()
     public testChildComponent() {
-        const c = new DummyChildComponent();
-        this._assertComponent(c);
+        runInInjectionContext(TestBed, () => {
+            const c = new DummyChildComponent();
+            this._assertComponent(c);
+        });
     }
 
     @NgTest()
     public testWatcher() {
-        const c = new SecondDummyComponent();
-        const ch = {a: new SimpleChange(undefined, 'a', true), b: new SimpleChange(undefined, 'b', true), c: new SimpleChange(undefined, 'c', true)};
-        c['ngOnChanges'](ch);
-        // Expect to make 5 assertions, no more, no less. 
-        expect(c.assertions).toEqual(5);
+        runInInjectionContext(TestBed, () => {
+            const c = new SecondDummyComponent();
+            const ch = {a: new SimpleChange(undefined, 'a', true), b: new SimpleChange(undefined, 'b', true), c: new SimpleChange(undefined, 'c', true)};
+            c['ngOnChanges'](ch);
+            // Expect to make 5 assertions, no more, no less. 
+            expect(c.assertions).toEqual(5);
+        })
     }
 
     @NgTest()
@@ -258,5 +272,17 @@ export class DecoratorsTest {
         expect(this._serviceExtendingCabledClassWithCables.service).toBeDefined();
         expect(this._serviceExtendingCabledClassWithCables.service.service).toBeDefined();
         expect(this._serviceExtendingCabledClassWithCables.service.service instanceof DummyServiceDecorated).toBeTrue();
+    }
+
+    @NgTest('test case when BaseComponent provides an instance based on its own injector')
+    public testBaseComponentInstance() {
+        let c: DummyComponentWithServiceOutsideContext;
+        runInInjectionContext(TestBed, () => {
+            c = new DummyComponentWithServiceOutsideContext();
+        })
+        const service = c['instance'](DummyServiceOutsideContext);
+        expect(service).toBeDefined();
+        expect(service.service).toBeDefined();
+        expect(service.service instanceof DummyServiceWithCables).toBeTrue();
     }
 }

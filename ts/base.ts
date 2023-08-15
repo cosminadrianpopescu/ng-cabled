@@ -1,4 +1,4 @@
-import { Provider, SimpleChanges, Type } from "@angular/core";
+import { EnvironmentInjector, inject, Provider, SimpleChanges, Type } from "@angular/core";
 import { Observable, Subscription } from "rxjs";
 import { bootstrapModule, CycleType, DecoratedClass, DecoratorMetadata, getCycles, getWatchers, processDependencies } from "./decorators";
 
@@ -26,6 +26,7 @@ export function CabledClassFactory(type: Type<any>, deps?: Array<any>) {
 export class BaseComponent {
     public id: string;
 
+    private __injector__ = inject(EnvironmentInjector);
     private __cycles__: Map<string, Array<string>> = new Map<string, Array<string>>();
     private __watchers__: Array<DecoratorMetadata<string>> = [];
     private __subscriptions__: Array<InternalSubscription> = [];
@@ -94,6 +95,14 @@ export class BaseComponent {
 
     protected getSubscriptionsByType(type: string): Array<Subscription> {
         return this.__subscriptions__.filter(s => s.type == type).map(s => s.s);
+    }
+
+    protected instance<T>(type: Type<T>, ...deps: any): T {
+        return this.__injector__.runInContext(() => CabledClassFactory(type, Array.isArray(deps) ? deps : []));
+    }
+
+    protected runInContext<T>(callback: () => T) {
+        return this.__injector__.runInContext(callback);
     }
 }
 
