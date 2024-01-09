@@ -1,19 +1,34 @@
 {
     "name": "ng-cabled",
-    "version": "4.0.2",
+    "version": "4.0.3",
     "description": "Library for ease of creating extensible angular components",
     "main": "index.js",
     "composite": true,
-    "fesm2020": "./fesm2020/ng-cabled.mjs",
-    "fesm2015": "./fesm2015/ng-cabled.mjs",
-    "esm2020": "./esm2020/index.mjs",
     "typings": "./index.d.ts",
-    "module": "./fesm2015/ng-cabled.mjs",
+    "exports": {
+        "./package.json": {
+            "default": "./package.json"
+        },
+        ".": {
+            "types": "./index.d.ts",
+            "fesm2022": "./fesm2022/ng-cabled.mjs",
+            "esm2022": "./esm2022/ng-cabled.mjs",
+            "node": "./fesm2022/ng-cabled.mjs",
+            "default": "./fesm2022/ng-cabled.mjs"
+        },
+        "testing": {
+            "types": "./testing/index.test.d.ts",
+            "fesm2022": "./testing/fesm2022/ng-cabled.mjs",
+            "esm2022": "./testing/esm2022/ng-cabled.mjs",
+            "node": "./testing/fesm2022/ng-cabled.mjs",
+            "default": "./testing/fesm2022/ng-cabled.mjs"
+        }
+    },
     "type": "module",
     "scripts": {
         "test2": "tsc -p tsconfig.test.json && node --enable-source-maps=true --loader=./esm-loader.js ./test-build/main.test.js && NG_CABLED_USE_PROXY=1 node --enable-source-maps=true --loader=./esm-loader.js ./test-build/main.test.js",
         "test": "ng build js && mv ./test-build/main.js ./test-build/main.cjs &&  node ./test-build/main.cjs && NG_CABLED_USE_PROXY=1 node ./test-build/main.cjs",
-        "build": "ng build",
+        "build": "ng build lib && ng build testing",
         "pre": "npm run build",
         "pack": "npm run pre && cd dist && npm pack",
         "publish": "npm run pre && cp README.md ./dist/README.md && cd dist && npm publish"
@@ -22,20 +37,20 @@
     "homepage": "https://github.com/cosminadrianpopescu/ng-cabled",
     "license": "GPL-3.0-or-later",
     "devDependencies": {
-        "@angular-devkit/build-angular": "^16.0.0",
-        "@angular/cli": "^15.0.0",
-        "@angular/common": "^15.0.0",
-        "@angular/compiler": "^15.0.0",
-        "@angular/compiler-cli": "^15.0.0",
-        "@angular/core": "^15.0.0",
-        "@angular/platform-browser": "^15.0.0",
-        "@angular/platform-browser-dynamic": "^15.0.0",
+        "@angular-devkit/build-angular": "^17.0.0",
+        "@angular/cli": "^17.0.0",
+        "@angular/common": "^17.0.0",
+        "@angular/compiler": "^17.0.0",
+        "@angular/compiler-cli": "^17.0.0",
+        "@angular/core": "^17.0.0",
+        "@angular/platform-browser": "^17.0.0",
+        "@angular/platform-browser-dynamic": "^17.0.0",
         "@types/jasmine": "^4.0.1",
         "jasmine": "^3.6.3",
         "jasmine-core": "^3.6.0",
-        "ng-packagr": "^15.0.0",
+        "ng-packagr": "^17.0.0",
         "reflect-metadata": "^0.1.13",
         "tslib": "^2.0.1",
-        "typescript": "^4.9.5"
+        "typescript": "^5.0.0"
     }
 }

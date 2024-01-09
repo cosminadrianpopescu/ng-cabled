@@ -34,8 +34,8 @@
                 "build": {
                     "builder": "@angular-devkit/build-angular:ng-packagr",
                     "options": {
-                        "project": "./ng-package.json",
-                        "tsConfig": "./tsconfig.test2.json"
+                        "project": "./ng-package.test.json",
+                        "tsConfig": "./tsconfig.test.json"
                     }
                 }
             }

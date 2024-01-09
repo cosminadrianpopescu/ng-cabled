@@ -10,7 +10,10 @@
         "esModuleInterop": true,
         "forceConsistentCasingInFileNames": true,
         "declaration": true,
-        "outDir": "./dist/"
+        "outDir": "./dist/",
+        "paths": {
+            "ng-cabled-src": ["./ts"]
+        }
     },
     "angularCompilerOptions": {
         "compilationMode": "partial"

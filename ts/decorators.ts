@@ -1,5 +1,5 @@
 // tslint:disable:no-invalid-this
-import { inject, Injectable, InjectionToken, Provider, Type } from '@angular/core';
+import { inject, Injectable, InjectFlags, InjectionToken, Provider, Type } from '@angular/core';
 import 'reflect-metadata';
 
 export type CycleType = 'destroy' | 'afterViewInit' | 'change' | 'init';
@@ -106,9 +106,7 @@ export function bootstrapModule(providers: Array<Provider>) {
         .map(p => typeof(p) == 'function' ? p : p['useClass'] ? p['provide'] : null)
         .filter(p => !!p)
         .forEach(p => {
-            const i = inject(p, {
-                optional: true,
-            })
+            const i = inject(p, InjectFlags.Optional)
             if (!i) {
                 return ;
             }
@@ -135,9 +133,7 @@ export function processDependencies(instance: Function) {
     deps.forEach(d => {
         const a = d.arg as NgServiceArguments;
         const optional = typeof(a.def) != 'undefined';
-        let i = inject(a.type as Type<any>, {
-            optional: optional,
-        });
+        let i = inject(a.type as Type<any>, InjectFlags.Optional);
 
         if (i == null && optional) {
             i = a.def;
