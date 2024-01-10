@@ -25,21 +25,6 @@
                 }
             }
         },
-        "testing": {
-            "projectType": "library",
-            "root": "",
-            "sourceRoot": "./ts",
-            "prefix": "lib",
-            "architect": {
-                "build": {
-                    "builder": "@angular-devkit/build-angular:ng-packagr",
-                    "options": {
-                        "project": "./ng-package.test.json",
-                        "tsConfig": "./tsconfig.test.json"
-                    }
-                }
-            }
-        },
         "js": {
             "projectType": "library",
             "root": "./",

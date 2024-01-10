@@ -1,16 +1,14 @@
 // import './testing/babel-support';
 // import 'ng-cabled/main.test';
+/// <amd-module name="ng-cabled/testing" />
 import * as path from 'path';
 import * as fs from 'fs';
 import { getTestBed, TestBed } from '@angular/core/testing';
 import { BrowserDynamicTestingModule, platformBrowserDynamicTesting } from '@angular/platform-browser-dynamic/testing';
-// import * as jasmine from 'jasmine/lib/jasmine.js';
 import 'reflect-metadata';
 import 'zone.js';
 import { runInInjectionContext } from '@angular/core';
-import { BaseModule, getTestcases, getTestunits } from 'ng-cabled-src';
-// var jasmine = global['jasmine'];
-// var j = new jasmine.default({});
+import { BaseModule, getTestcases, getTestunits } from 'ng-cabled';
 getTestBed().initTestEnvironment(BrowserDynamicTestingModule, platformBrowserDynamicTesting());
 
 global['Document'] = <any>process;
@@ -37,6 +35,7 @@ const _config = tb.configureTestingModule;
     })
 }
 
+
 // Hack for jasmine-core. 
 const oldJoin = path['default'].join;
 (path['default'] as any).join = (folder: string, file: string) => {
@@ -48,7 +47,7 @@ const oldJoin = path['default'].join;
 }
 
 export async function startTesting() {
-    const jasmine = await import('jasmine/lib/jasmine.js');
+    const jasmine = await import('jasmine');
     const j = new jasmine.default({});
 
     const units = getTestunits();
@@ -75,11 +74,11 @@ export async function startTesting() {
         });
     });
 
-    const oldSpecDone = j.reporter.specDone;
+    const oldSpecDone = j['reporter_'].specDone;
 
-    j.reporter.specDone = function(result: { fullName: any; status: any; }) {
+    j['reporter_'].specDone = function(result: { fullName: any; status: any; }) {
         console.log('Finished', result.fullName, ' => ', result.status);
-        oldSpecDone(result);
+        oldSpecDone(result as any);
     };
     j.execute();
 }

@@ -12,7 +12,9 @@
         "declaration": true,
         "outDir": "./dist/",
         "paths": {
-            "ng-cabled-src": ["./ts"]
+            "ng-cabled": [
+                "./ts"
+            ]
         }
     },
     "angularCompilerOptions": {

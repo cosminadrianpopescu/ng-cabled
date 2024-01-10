@@ -1,5 +1,5 @@
-import { startTesting } from './index.test';
-import './testing/decorators.spec';
-import './testing/future.spec';
+import { startTesting } from './testing/testing';
+import './specs/decorators.spec';
+import './specs/future.spec';
 
 startTesting();

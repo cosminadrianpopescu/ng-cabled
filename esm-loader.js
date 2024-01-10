@@ -1,4 +1,7 @@
 export const resolve = (specifier, context, nextResolve) => {
+    if (specifier == 'ng-cabled') {
+        return nextResolve('../index.js', context);
+    }
     if (specifier.startsWith("./") || specifier.startsWith("../")) {
         if (
             !(

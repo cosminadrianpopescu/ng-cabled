@@ -1,6 +1,6 @@
 {
     "name": "ng-cabled",
-    "version": "4.0.3",
+    "version": "4.0.4",
     "description": "Library for ease of creating extensible angular components",
     "main": "index.js",
     "composite": true,
@@ -16,19 +16,19 @@
             "node": "./fesm2022/ng-cabled.mjs",
             "default": "./fesm2022/ng-cabled.mjs"
         },
-        "testing": {
-            "types": "./testing/index.test.d.ts",
-            "fesm2022": "./testing/fesm2022/ng-cabled.mjs",
-            "esm2022": "./testing/esm2022/ng-cabled.mjs",
-            "node": "./testing/fesm2022/ng-cabled.mjs",
-            "default": "./testing/fesm2022/ng-cabled.mjs"
+        "./testing": {
+            "types": "./ts/testing/testing.d.ts",
+            "fesm2022": "./fesm2022/ng-cabled-ts-testing.mjs",
+            "esm2022": "./esm2022/ts/testing/ng-cabled-ts-testing.mjs",
+            "node": "./fesm2022/ng-cabled-ts-testing.mjs",
+            "default": "./fesm2022/ng-cabled-ts-testing.mjs"
         }
     },
     "type": "module",
     "scripts": {
         "test2": "tsc -p tsconfig.test.json && node --enable-source-maps=true --loader=./esm-loader.js ./test-build/main.test.js && NG_CABLED_USE_PROXY=1 node --enable-source-maps=true --loader=./esm-loader.js ./test-build/main.test.js",
         "test": "ng build js && mv ./test-build/main.js ./test-build/main.cjs &&  node ./test-build/main.cjs && NG_CABLED_USE_PROXY=1 node ./test-build/main.cjs",
-        "build": "ng build lib && ng build testing",
+        "build": "ng build lib",
         "pre": "npm run build",
         "pack": "npm run pre && cd dist && npm pack",
         "publish": "npm run pre && cp README.md ./dist/README.md && cd dist && npm publish"
@@ -45,9 +45,8 @@
         "@angular/core": "^17.0.0",
         "@angular/platform-browser": "^17.0.0",
         "@angular/platform-browser-dynamic": "^17.0.0",
-        "@types/jasmine": "^4.0.1",
-        "jasmine": "^3.6.3",
-        "jasmine-core": "^3.6.0",
+        "@types/jasmine": "^5.1.4",
+        "jasmine": "^5.1.0",
         "ng-packagr": "^17.0.0",
         "reflect-metadata": "^0.1.13",
         "tslib": "^2.0.1",
