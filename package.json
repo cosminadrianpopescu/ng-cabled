@@ -1,6 +1,6 @@
 {
     "name": "ng-cabled",
-    "version": "4.0.4",
+    "version": "4.0.5",
     "description": "Library for ease of creating extensible angular components",
     "main": "index.js",
     "composite": true,

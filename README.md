@@ -1,5 +1,13 @@
 # Ng Cabled
 
+**Attention**
+
+This project is now archived. Since angular 15, there is the new
+[`inject`](https://angular.io/api/core/inject) function, so the `@Cabled`
+annotation is now obsolete. Regarding the cycles annotation, there is now a
+newer project: [`ng-hooks`](https://github.com/cosminadrianpopescu/ng-hooks)
+which provides the same enhaced functionality.
+
 **Or, extending Angular components the proper way.**
 
 This library contains a few decorators which will make extending components
